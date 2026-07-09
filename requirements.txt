@@ -1,0 +1,6 @@
+# File Manager Application Dependencies
+# Note: tkinter is included with Python standard library
+
+# No external dependencies required for basic functionality
+# Future enhancements may require:
+# Pillow>=10.0.0  # For image thumbnails (optional)

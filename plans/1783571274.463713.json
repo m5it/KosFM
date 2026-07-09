@@ -1,0 +1,86 @@
+{
+  "id": "1783571274.463713",
+  "title": "Python File Manager with Tree View",
+  "instructions": "Create a cross-platform file manager application using Python tkinter. The application features a left sidebar with a directory tree view and a main panel showing files/folders for the selected directory. Phase 1 focuses on browsing/navigation, with file operations to be added later.",
+  "startTimestamp": 1783571274.4637175,
+  "endTimestamp": null,
+  "tasks": {
+    "1783571283.3006392": {
+      "id": "1783571283.3006392",
+      "status": "in_progress",
+      "instruction": "Create the main project directory and initial files:\n1. Create main.py as the entry point\n2. Create config.py for constants and settings\n3. Create requirements.txt (empty for now since tkinter is built-in)\n4. Create assets/ folder for future icons\n5. Set up basic project structure with proper imports",
+      "startTimestamp": 1783571295.1894937,
+      "endTimestamp": null,
+      "log": [
+        {
+          "timestamp": 1783571295.1896198,
+          "text": "Build started"
+        }
+      ]
+    },
+    "1783571283.3008125": {
+      "id": "1783571283.3008125",
+      "status": "pending",
+      "instruction": "Build the main window with tkinter:\n1. Create tkinter root window with title \"Python File Manager\"\n2. Set minimum window size (e.g., 800x600)\n3. Create main PanedWindow widget to split left and right panels\n4. Add basic menu bar (File, Edit, View, Help menus)\n5. Add status bar at the bottom\n6. Test that the window opens and resizes properly",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    },
+    "1783571283.3020456": {
+      "id": "1783571283.3020456",
+      "status": "pending",
+      "instruction": "Create the directory tree view on the left:\n1. Create a Frame for the left panel\n2. Add a Label \"Directories\" at the top\n3. Create ttk.Treeview widget for the tree\n4. Configure columns (Name only for now)\n5. Add vertical scrollbar for the tree\n6. Populate root with system drives (Windows) or root directory (Unix/Mac)\n7. Add expandable nodes indicator (+ sign)\n8. Test the tree displays correctly",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    },
+    "1783571283.302194": {
+      "id": "1783571283.302194",
+      "status": "pending",
+      "instruction": "Add functionality to expand tree nodes:\n1. Bind double-click or click on + to expand/collapse nodes\n2. When expanding a node, load its subdirectories\n3. Insert subdirectory items into the tree\n4. Add placeholder \"dummy\" child to show expand arrow for folders with subdirs\n5. Handle errors (permission denied, etc.) gracefully\n6. Ensure tree updates properly when expanding/collapsing",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    },
+    "1783571283.302317": {
+      "id": "1783571283.302317",
+      "status": "pending",
+      "instruction": "Create the file listing view on the right:\n1. Create a Frame for the right panel\n2. Add path display label at the top\n3. Create ttk.Treeview for file listing with columns: Name, Size, Type, Modified Date\n4. Configure column widths and headers\n5. Add vertical and horizontal scrollbars\n6. Create function to populate list with files from a given path\n7. Test with a sample directory",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    },
+    "1783571283.3024356": {
+      "id": "1783571283.3024356",
+      "status": "pending",
+      "instruction": "Link the left tree to the right file view:\n1. Bind tree selection event (<<TreeviewSelect>>)\n2. When a directory is selected in left tree:\n   - Get the full path of selected item\n   - Update the path label in right panel\n   - Clear current file list\n   - Populate file list with contents of selected directory\n3. Handle the case where selected item is not a directory\n4. Test clicking different directories updates the view",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    },
+    "1783571283.3025625": {
+      "id": "1783571283.3025625",
+      "status": "pending",
+      "instruction": "Enable navigation into folders via double-click:\n1. Bind double-click event on right panel file list\n2. If clicked item is a directory:\n   - Update the tree selection to that directory\n   - Refresh file view to show its contents\n3. If clicked item is a file, show a message or open it\n4. Add \"Go Up\" button to navigate to parent directory\n5. Update path bar to show current location\n6. Test navigation works smoothly",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    },
+    "1783571283.3027058": {
+      "id": "1783571283.3027058",
+      "status": "pending",
+      "instruction": "Improve visual appearance:\n1. Create or use simple icons for folders and files\n2. Use tkinter.PhotoImage or text symbols for icons\n3. Apply different icons for different file types\n4. Add styling to tree views (alternating row colors, etc.)\n5. Format file sizes in human-readable format (KB, MB, etc.)\n6. Format dates nicely\n7. Test the UI looks clean and professional",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    },
+    "1783571283.3027916": {
+      "id": "1783571283.3027916",
+      "status": "pending",
+      "instruction": "Add final polish:\n1. Add Refresh button/menu item to reload current view\n2. Add keyboard shortcuts (F5 for refresh, etc.)\n3. Handle permission errors gracefully with message boxes\n4. Handle deleted/moved files gracefully\n5. Add loading indicator for slow directories\n6. Test edge cases (empty folders, system folders, etc.)\n7. Final code cleanup and comments",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    }
+  }
+}

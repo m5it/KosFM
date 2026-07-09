@@ -1,9 +1,6 @@
-# File Manager
+# KosFM
 
 A simple, cross-platform file manager built with Python and tkinter. Features a dual-pane interface with a directory tree on the left and file listing on the right.
-
-![Python Version](https://img.shields.io/badge/python-3.6+-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## Features
 
@@ -15,6 +12,8 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
   - Double-click folders to navigate into them
   - "Up" button to go to parent directory
   - Path bar for direct navigation
+- **Menu Bar**: File, View, and Help menus with keyboard shortcuts
+- **View Options**: Toggle hidden files and status bar visibility
 - **Icons**: Visual distinction with emoji icons (📁 folders, 📄 files)
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 - **Error Handling**: Graceful handling of permission errors and inaccessible directories
@@ -24,7 +23,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  File Manager                              [Window]   │
+│ File  View  Help                           [Window]   │
 ├──────────────────┬────────────────────────────────────┤
 │ 📁 Directory     │ ⬆ Up  [/home/user/projects]  🔄    │
 │ ├── 📁 home      ├────────────────────────────────────┤
@@ -36,6 +35,26 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 │                  │ 4 items (2 folders, 2 files)      │   │
 └──────────────────┴────────────────────────────────────┘
 ```
+
+## Menu Bar
+
+### File Menu
+| Option | Shortcut | Description |
+|--------|----------|-------------|
+| Refresh | Ctrl+R | Reload current directory |
+| Exit | Ctrl+Q | Close application |
+
+### View Menu
+| Option | Description |
+|--------|-------------|
+| Show Hidden Files | Toggle visibility of hidden files (.*) |
+| Show Status Bar | Toggle status bar at bottom |
+
+### Help Menu
+| Option | Description |
+|--------|-------------|
+| Keyboard Shortcuts | Show all available shortcuts |
+| About | Application information |
 
 ## Requirements
 
@@ -65,11 +84,18 @@ python main.py
 | Type path + Enter | Navigate to specific path |
 | Click "Refresh" | Reload current directory |
 
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| Ctrl+R | Refresh current directory |
+| Ctrl+Q | Exit application |
+
 ## Project Structure
 
 ```
 file-manager/
-├── main.py           # Main application file
+├── main.py           # Main application file (20KB)
 ├── config.py         # Configuration constants
 ├── requirements.txt  # Dependencies (empty - uses stdlib)
 ├── assets/           # Future: icons and resources
@@ -96,8 +122,10 @@ Edit `config.py` to customize:
 
 ## Keyboard Shortcuts
 
+- `Ctrl+R` - Refresh
+- `Ctrl+Q` - Exit
 - `Enter` (in path bar) - Navigate to entered path
-- `F5` - Refresh (future feature)
+- `Double-click` - Open folder
 
 ## Error Handling
 
@@ -115,8 +143,9 @@ The application handles common errors gracefully:
 - [ ] Search functionality
 - [ ] Bookmarks/favorites
 - [ ] Dark theme
-- [ ] Keyboard shortcuts
+- [ ] Additional keyboard shortcuts
 - [ ] File type icons (different icons for different file types)
+- [ ] Drag and drop support
 
 ## Contributing
 
@@ -129,3 +158,7 @@ This project is open source and available under the MIT License.
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for version history.
+
+---
+
+**Current Version: 1.1.0** - Now with menu bar and view options!

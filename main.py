@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-File Manager Application
+KosFM Application
 A simple file manager with tree view and file listing.
 """
 
@@ -36,8 +36,8 @@ def handle_error(func):
     return wrapper
 
 
-class FileManagerApp:
-    """Main application class for the file manager."""
+class KosFMApp:
+    """Main application class for KosFM."""
     
     def __init__(self, root):
         self.root = root
@@ -46,6 +46,10 @@ class FileManagerApp:
         self.root.minsize(*MIN_WINDOW_SIZE)
         
         self.current_path = None
+        
+        # View options
+        self.show_hidden_files = tk.BooleanVar(value=False)
+        self.show_status_bar = tk.BooleanVar(value=True)
         
         # Initialize UI components
         self.setup_ui()
@@ -179,6 +183,9 @@ class FileManagerApp:
             entries = []
             with os.scandir(self.current_path) as it:
                 for entry in it:
+                    # Filter hidden files based on setting
+                    if not self.show_hidden_files.get() and entry.name.startswith('.'):
+                        continue
                     entries.append(entry)
             entries.sort(key=lambda e: (not e.is_dir(), e.name.lower()))
             
@@ -216,6 +223,10 @@ class FileManagerApp:
         
     def setup_ui(self):
         """Initialize the user interface."""
+        # Create menu bar first
+        self._create_menu_bar()
+        
+        # Main container with padding
         self.main_frame = ttk.Frame(self.root, padding=str(PANEL_PADDING))
         self.main_frame.grid(row=0, column=0, sticky="nsew")
         self.root.columnconfigure(0, weight=1)
@@ -226,6 +237,131 @@ class FileManagerApp:
         self._create_tree_panel()
         self._create_file_panel()
         self._create_status_bar()
+        
+    def _create_menu_bar(self):
+        """Create the menu bar with File, View, and Help menus."""
+        # Create menu bar
+        self.menu_bar = tk.Menu(self.root)
+        self.root.config(menu=self.menu_bar)
+        
+        # Create menus
+        self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.view_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
+        
+        # Add menus to menu bar
+        self.menu_bar.add_cascade(label="File", menu=self.file_menu)
+        self.menu_bar.add_cascade(label="View", menu=self.view_menu)
+        self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
+        
+        # Populate menus
+        self._create_file_menu()
+        self._create_view_menu()
+        self._create_help_menu()
+        
+    def _create_file_menu(self):
+        """Create File menu with Refresh and Exit options."""
+        # Refresh option with keyboard shortcut
+        self.file_menu.add_command(
+            label="Refresh",
+            command=self._refresh_file_view,
+            accelerator="Ctrl+R"
+        )
+        self.root.bind("<Control-r>", lambda e: self._refresh_file_view())
+        
+        # Separator
+        self.file_menu.add_separator()
+        
+        # Exit option with keyboard shortcut
+        self.file_menu.add_command(
+            label="Exit",
+            command=self.root.destroy,
+            accelerator="Ctrl+Q"
+        )
+        self.root.bind("<Control-q>", lambda e: self.root.destroy())
+        
+    def _create_view_menu(self):
+        """Create View menu with display options."""
+        # Show hidden files checkbox
+        self.view_menu.add_checkbutton(
+            label="Show Hidden Files",
+            variable=self.show_hidden_files,
+            command=self._toggle_hidden_files
+        )
+        
+        # Separator
+        self.view_menu.add_separator()
+        
+        # Show status bar checkbox
+        self.view_menu.add_checkbutton(
+            label="Show Status Bar",
+            variable=self.show_status_bar,
+            command=self._toggle_status_bar
+        )
+        
+    def _toggle_hidden_files(self):
+        """Toggle hidden files visibility and refresh view."""
+        self._refresh_file_view()
+        
+    def _toggle_status_bar(self):
+        """Toggle status bar visibility."""
+        if self.show_status_bar.get():
+            self.status_frame.grid()
+        else:
+            self.status_frame.grid_remove()
+            
+    def _create_help_menu(self):
+        """Create Help menu with About and Shortcuts options."""
+        # Keyboard shortcuts
+        self.help_menu.add_command(
+            label="Keyboard Shortcuts",
+            command=self._show_shortcuts
+        )
+        
+        # Separator
+        self.help_menu.add_separator()
+        
+        # About
+        self.help_menu.add_command(
+            label="About",
+            command=self._show_about
+        )
+        
+    def _show_shortcuts(self):
+        """Show keyboard shortcuts dialog."""
+        shortcuts = """Keyboard Shortcuts:
+
+Ctrl+R      Refresh current directory
+Ctrl+Q      Exit application
+
+Navigation:
+Double-click    Open folder
+Enter           Navigate to path (in path bar)
+
+Menu:
+File → Refresh      Reload directory
+File → Exit         Close application
+View → Show Hidden Files    Toggle hidden files
+View → Show Status Bar      Toggle status bar
+"""
+        messagebox.showinfo("Keyboard Shortcuts", shortcuts)
+        
+    def _show_about(self):
+        """Show About dialog."""
+        about_text = f"""KosFM
+
+Version: 1.1.0
+A simple file manager with tree view and file listing.
+
+Built with Python and tkinter.
+
+Features:
+• Dual-pane interface
+• Lazy loading directory tree
+• File details (size, date, type)
+• Cross-platform support
+"""
+        messagebox.showinfo("About", about_text)
         
     def _create_tree_panel(self):
         """Create the left panel with directory tree."""
@@ -377,7 +513,7 @@ def main():
     """Application entry point."""
     try:
         root = tk.Tk()
-        app = FileManagerApp(root)
+        app = KosFMApp(root)
         app.run()
     except Exception as e:
         print(f"Error starting application: {e}", file=sys.stderr)

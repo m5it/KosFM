@@ -1,9 +1,15 @@
 # Changelog
 
-All notable changes to the File Manager project will be documented in this file.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+All notable changes to the KosFM project will be documented in this file.
+- **Menu Bar** with three menus:
+  - **File Menu**: Refresh (Ctrl+R), Exit (Ctrl+Q)
+  - **View Menu**: 
+    - Show/Hide Hidden Files toggle
+    - Show/Hide Status Bar toggle
+  - **Help Menu**: Keyboard Shortcuts dialog, About dialog
+- Hidden files filtering (files starting with `.`)
+- Status bar visibility toggle
+- Keyboard shortcuts for menu actions
 
 ## [1.0.0] - 2024-01-15
 
@@ -46,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search functionality across directories
 - Bookmarks and favorites
 - Dark theme support
-- Keyboard shortcuts (F5 refresh, Ctrl+C copy, etc.)
+- Additional keyboard shortcuts (F5 refresh, Ctrl+C copy, etc.)
 - Different icons for different file types
 - Drag and drop support
 - Multi-select for batch operations
@@ -54,6 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## Version History
+
+### v1.1.0 (2024-01-15)
+- ✨ Added menu bar with File, View, and Help menus
+- ✨ Added Show/Hide Hidden Files option
+- ✨ Added Status Bar toggle
+- ✨ Added Keyboard Shortcuts and About dialogs
 
 ### v1.0.0 (2024-01-15)
 - 🎉 First stable release

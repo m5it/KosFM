@@ -4,8 +4,8 @@ Contains constants, settings, and default values.
 """
 
 # Application Information
-APP_NAME = "File Manager"
-APP_VERSION = "1.0.0"
+APP_NAME = "KosFM"
+APP_VERSION = "1.1.0"
 AUTHOR = "Developer"
 
 # Window Settings

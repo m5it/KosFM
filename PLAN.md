@@ -1,29 +1,35 @@
-# Plan: Add File Opening and Context Menu
-## ID: 1783600482.0474982
-## Created: 2026-07-09 12:34:42
+# Plan: Linux File Associations with xdg-mime
+## ID: 1783613989.3948464
+## Created: 2026-07-09 16:19:49
 ## Status: in_progress
 
 ### Goal:
-Add ability to open files with default application on click, and implement a right-click context menu with options like Open, Open With, and other file operations.
+Implement proper Linux file association handling using xdg-mime. Detect MIME types, find available applications from .desktop files, open files with correct apps, and save user preferences for "Open With" selections.
 
-### Tasks (6):
-1. [pending] Add File Click to Open
-   ID: 1783600494.3595426
+### Tasks (8):
+1. [pending] Create MIME Type Detector
+   ID: 1783613998.7459292
 
-2. [pending] Create Context Menu for Right-Click
-   ID: 1783600494.359686
+2. [pending] Find Applications for MIME Type
+   ID: 1783613998.7460725
 
-3. [pending] Implement Open With Dialog
-   ID: 1783600494.3610046
+3. [pending] Get Default Application
+   ID: 1783613998.7844386
 
-4. [pending] Add Copy Path Option
-   ID: 1783600494.3612
+4. [pending] Parse .desktop Files
+   ID: 1783613998.78456
 
-5. [pending] Add Properties Dialog
-   ID: 1783600494.361379
+5. [pending] Launch Application
+   ID: 1783613998.784661
 
-6. [pending] Integrate Context Menu into File Panel
-   ID: 1783600494.3615546
+6. [pending] Create Open With Dialog
+   ID: 1783613998.78476
+
+7. [pending] Save Application Preferences
+   ID: 1783613998.7848763
+
+8. [pending] Integrate xdg-mime into File Opening
+   ID: 1783613998.7853699
 
 ---
 

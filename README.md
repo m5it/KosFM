@@ -1,13 +1,20 @@
+
 # KosFM
 
-A simple, cross-platform file manager built with Python and tkinter. Features a dual-pane interface with a resizable directory tree on the left and file listing on the right.
+A simple, cross-platform file manager built with Python and tkinter. Features a dual-pane interface with a resizable directory tree on the left and file listing on the right. Now with Linux desktop integration via xdg-mime!
 
 ![Python Version](https://img.shields.io/badge/python-3.6+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-lightgrey.svg)
 
 ## Features
 
 - **Dual-Pane Interface**: Resizable directory tree on the left, file listing on the right
+- **Linux Desktop Integration**: Full xdg-mime support for file associations
+- **File Opening**: Single-click to open files with default application
+- **Open With**: Right-click menu to choose application and set defaults
+- **Application Detection**: Automatically finds all apps that can handle a file type
+- **Saved Preferences**: Remembers your "Open With" choices between sessions
 - **Lazy Loading**: Directories load on-demand for better performance
 - **File Details**: View file size, modification date, and type
 - **Resizable Panels**: Drag the divider to adjust panel widths
@@ -41,6 +48,22 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 └──────────────────┴────────────────────────────────────┘
 ```
 
+## File Opening (Linux)
+
+KosFM integrates with your Linux desktop environment using `xdg-mime`:
+
+- **Single-click** any file to open with its default application
+- **Right-click** → "Open With..." to choose from available applications
+- **Set as default** checkbox to make an app the default for that file type
+- **Saved preferences** persist between sessions in `config.json`
+
+Supported features:
+- MIME type detection via `xdg-mime query filetype`
+- Application discovery from `/usr/share/applications` and `~/.local/share/applications`
+- .desktop file parsing (Name, Icon, Exec, MimeType)
+- Field code handling (%f, %F, %u, %U in Exec lines)
+- System-wide default setting via `xdg-mime default`
+
 ## Project Structure
 
 ```
@@ -53,7 +76,7 @@ KosFM/
 │   ├── ui/                 # UI components
 │   │   ├── __init__.py
 │   │   ├── tree_panel.py   # Directory tree widget
-│   │   ├── file_panel.py   # File listing widget
+│   │   ├── file_panel.py   # File listing widget (with context menu)
 │   │   ├── menu_bar.py     # Menu bar
 │   │   └── status_bar.py   # Status bar
 │   └── utils/              # Utility modules
@@ -61,7 +84,8 @@ KosFM/
 │       ├── config_manager.py # Config save/load
 │       ├── error_handler.py  # Error handling
 │       ├── file_utils.py     # File formatting
-│       └── platform_utils.py # Platform-specific code
+│       ├── platform_utils.py # Platform-specific code
+│       └── xdg_mime.py       # Linux MIME type handling (NEW!)
 ├── README.md               # This file
 └── CHANGELOG.md            # Version history
 ```
@@ -128,14 +152,15 @@ Configuration is automatically saved to `~/.config/KosFM/config.json` and includ
 - Window position and size
 - Panel divider position
 - View options (show hidden files, show status bar)
+- **MIME type application preferences** (saved "Open With" choices)
 
 ## Platform Support
 
 | Platform | Status | Notes |
 |----------|--------|-------|
+| Linux | ✅ Supported | Full xdg-mime integration |
 | Windows | ✅ Supported | Shows all drives (C:\, D:\, etc.) |
 | macOS | ✅ Supported | Shows / and /Users |
-| Linux | ✅ Supported | Shows / and /home |
 
 ## Modular Architecture
 
@@ -152,14 +177,15 @@ This structure makes the code easy to maintain, test, and extend.
 ## Future Enhancements
 
 - [ ] File operations (copy, move, delete, rename)
-- [ ] Context menu (right-click)
 - [ ] File preview panel
 - [ ] Search functionality
 - [ ] Bookmarks/favorites
 - [ ] Dark theme
 - [ ] Additional keyboard shortcuts
-- [ ] File type icons
+- [ ] File type icons (replace emoji with actual icons)
 - [ ] Drag and drop support
+- [ ] Archive handling (zip, tar, etc.)
+- [ ] Image thumbnails
 
 ## Contributing
 
@@ -175,4 +201,4 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ---
 
-**Current Version: 1.2.0** - Now with modular architecture and resizable panels!
+**Current Version: 1.3.0** - Now with Linux xdg-mime integration for proper file associations!

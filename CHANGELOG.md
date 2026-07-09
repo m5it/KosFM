@@ -1,34 +1,50 @@
+
 # Changelog
 
-All notable changes to the KosFM project will be documented in this file.
+All notable changes to KosFM will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-07-09
 ## [1.3.0] - 2026-07-09
 
 ### Added
-- **File Opening**: Single-click to open files with default system application
-  - Cross-platform: Uses `os.startfile` (Windows), `open` (macOS), `xdg-open` (Linux)
-  - Shows status feedback when opening files
-- **Right-Click Context Menu**: Context menu on file items with options:
+- **Linux xdg-mime Integration**: Full support for Linux desktop file associations
+  - MIME type detection via `xdg-mime query filetype`
+  - Automatic discovery of applications from .desktop files
+  - Single-click file opening with default application
+  - "Open With" dialog showing all apps for a file type
+  - "Set as default" checkbox to save preferences
+  - Saved preferences persist in config.json
+  - System-wide default setting via `xdg-mime default`
+- **Right-Click Context Menu**: New context menu on files with options:
   - **Open**: Open file with default application
-  - **Open With...**: Choose specific application to open file
-  - **Copy Path**: Copy full file path to clipboard
+  - **Open With...**: Choose from available applications
+  - **Copy Path**: Copy file path to clipboard
   - **Properties**: Show file details dialog
-- **Open With Dialog**: Select from platform-specific applications (Notepad, TextEdit, gedit, etc.)
-- **Properties Dialog**: Display file information:
-  - Name, path, type, size
-  - Created, modified, accessed dates
-  - Permissions (Unix/Linux)
-- **File Opener Utility**: New `utils/file_opener.py` module for cross-platform file opening
+- **New Utils Module**: `xdg_mime.py` with functions:
+  - `get_mime_type()` - Detect MIME type
+  - `get_default_application()` - Get default app
+  - `set_default_application()` - Set system default
+  - `find_applications_for_mime_type()` - Find all compatible apps
+  - `parse_desktop_file()` - Parse .desktop files
+  - `launch_application()` - Launch with specific app
+  - `open_file_with_default()` - Open via xdg-open
 
 ### Changed
-- **File Panel**: Enhanced with click handling and context menu support
-- **App Module**: Added dialog handlers for Open With and Properties
+- **File Opening**: Now uses xdg-mime on Linux for proper file associations
+- **Config**: Added `mime_apps` section for saved application preferences
+- **App**: Updated `_on_file_click()` to check saved preferences before opening
+
+### Technical
+- Scans `/usr/share/applications`, `/usr/local/share/applications`, and `~/.local/share/applications`
+- Handles .desktop field codes (%f, %F, %u, %U)
+- Supports wildcard MIME type matching (e.g., `image/*` matches `image/png`)
+- Filters out NoDisplay and Hidden apps
 
 ## [1.2.0] - 2026-07-09
+
+### Added
 - **Window State Persistence**: Saves and restores:
   - Window position (x, y)
   - Window size (width, height)
@@ -115,23 +131,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Version History
 
 ### v1.3.0 (2026-07-09)
-- ✨ **File Opening**: Single-click to open files
-- ✨ **Context Menu**: Right-click menu with Open, Open With, Copy Path, Properties
-- ✨ **Open With Dialog**: Choose application to open files
-- ✨ **Properties Dialog**: View detailed file information
-- 📋 Cross-platform file opener utility
+- ✨ **Linux xdg-mime Integration**: Full desktop file association support
+- ✨ **File Opening**: Single-click opens files with correct application
+- ✨ **Open With Dialog**: Choose from all available applications
+- ✨ **Saved Preferences**: Remember "Open With" choices per MIME type
+- 📋 New `xdg_mime.py` utility module
+- 🐧 Linux-optimized file handling
 
 ### v1.2.0 (2026-07-09)
-- ✨ Added Status Bar toggle
-- ✨ Added Keyboard Shortcuts and About dialogs
+- ✨ **Modular Architecture**: Reorganized into focused modules
+- ✨ **Resizable Panels**: PanedWindow for adjustable tree/file panels
+- ✨ **Config Manager**: Persistent settings with JSON storage
+- ✨ **Error Handler**: Decorator for graceful error handling
+- 📋 Separated UI components (tree_panel, file_panel, menu_bar, status_bar)
+- 📋 Utility modules (config_manager, error_handler, file_utils, platform_utils)
+
+### v1.1.0 (2026-07-09)
+- ✨ **Menu Bar**: File, View, and Help menus
+- ✨ **Keyboard Shortcuts**: Ctrl+R (refresh), Ctrl+Q (exit)
+- ✨ **View Options**: Toggle hidden files and status bar
+- ✨ **Window State**: Save/restore position, size, and panel widths
+- 📋 Help dialogs for shortcuts and about
 
 ### v1.0.0 (2026-07-09)
-- 🎉 First stable release
-- Complete file manager with tree view and file listing
-- Basic navigation and error handling
-- Cross-platform compatibility
-
-### v0.1.0 (Development)
-- Project initialization
-- Basic window setup
-- Initial tree view implementation
+- ✨ **Initial Release**: Basic file manager functionality
+- ✨ **Dual-Pane Layout**: Directory tree + file listing
+- ✨ **Lazy Loading**: Directories load on demand
+- ✨ **File Details**: Size, modification date, type
+- ✨ **Navigation**: Tree click, double-click, Up button, path bar
+- ✨ **Status Bar**: Item count and current path
+- 📋 Cross-platform support (Windows, macOS, Linux)

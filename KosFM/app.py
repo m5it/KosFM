@@ -1,3 +1,4 @@
+
 """
 Main application module for KosFM.
 Wires together all UI components and utilities.
@@ -7,13 +8,22 @@ import os
 import tkinter as tk
 from tkinter import ttk, messagebox
 import platform
+from pathlib import Path
 
 from .config import APP_NAME, WINDOW_SIZE, MIN_WINDOW_SIZE, TREE_WIDTH, DEFAULT_PATH
 from .utils.config_manager import ConfigManager
 from .utils.error_handler import handle_error
 from .utils.file_utils import format_size, format_time, get_file_type
 from .utils.platform_utils import get_root_directories
-from .utils.file_opener import open_file_default, open_file_with
+from .utils.xdg_mime import (
+    get_mime_type,
+    get_default_application,
+    set_default_application,
+    find_applications_for_mime_type,
+    launch_application,
+    open_file_with_default,
+    parse_desktop_file
+)
 from .ui.tree_panel import TreePanel
 from .ui.file_panel import FilePanel
 from .ui.menu_bar import MenuBar
@@ -274,11 +284,39 @@ class KosFMApp:
     def _on_file_click(self, path):
         """Handle single click on file - open with default app."""
         if os.path.isfile(path):
+            # Get MIME type
+            mime_type = get_mime_type(path)
+            
+            # Check if user has saved preference for this MIME type
+            saved_app = self.config.get("mime_apps", {}).get(mime_type)
+            
+            if saved_app:
+                # Use saved application
+                desktop_path = self._find_desktop_file(saved_app)
+                if desktop_path:
+                    app_info = parse_desktop_file(desktop_path)
+                    if app_info:
+                        self.status_bar.update(f"Opening: {path}")
+                        launch_application(path, app_info)
+                        return
+            
+            # Fall back to xdg-open
             self.status_bar.update(f"Opening: {path}")
-            success = open_file_default(path)
-            if not success:
-                self._show_error(f"Could not open file: {path}")
+            open_file_with_default(path)
                 
+    def _find_desktop_file(self, desktop_name):
+        """Find .desktop file by name."""
+        search_dirs = [
+            Path.home() / '.local' / 'share' / 'applications',
+            Path('/usr/share/applications'),
+            Path('/usr/local/share/applications'),
+        ]
+        for d in search_dirs:
+            path = d / desktop_name
+            if path.exists():
+                return path
+        return None
+            
     def _on_context_menu(self, action, path):
         """Handle context menu actions."""
         if not path:
@@ -294,35 +332,92 @@ class KosFMApp:
             self._show_properties_dialog(path)
             
     def _show_open_with_dialog(self, path):
-        """Show Open With dialog."""
+        """Show Open With dialog with xdg-mime apps."""
+        mime_type = get_mime_type(path)
+        if not mime_type:
+            self._show_error(f"Could not determine file type: {path}")
+            return
+            
+        # Find all apps for this MIME type
+        apps = find_applications_for_mime_type(mime_type)
+        
+        if not apps:
+            self._show_error(f"No applications found for {mime_type}")
+            return
+            
+        # Get current default
+        default_app = get_default_application(mime_type)
+        
         dialog = tk.Toplevel(self.root)
-        dialog.title("Open With")
-        dialog.geometry("300x150")
+        dialog.title(f"Open With - {os.path.basename(path)}")
+        dialog.geometry("450x400")
         dialog.transient(self.root)
         dialog.grab_set()
+        dialog.resizable(False, False)
         
-        ttk.Label(dialog, text=f"Open: {os.path.basename(path)}").pack(pady=10)
+        # Main container with padding
+        main_frame = ttk.Frame(dialog, padding="10")
+        main_frame.pack(fill="both", expand=True)
         
-        system = platform.system()
-        apps = []
-        if system == "Windows":
-            apps = ["notepad", "mspaint", "explorer"]
-        elif system == "Darwin":
-            apps = ["TextEdit", "Preview", "Safari"]
-        else:
-            apps = ["gedit", "gimp", "firefox", "vlc"]
+        ttk.Label(main_frame, text=f"File type: {mime_type}").pack(pady=(0, 10), anchor="w")
+        
+        # Create listbox with scrollbar
+        list_frame = ttk.Frame(main_frame)
+        list_frame.pack(pady=5, fill="both", expand=True)
+        
+        scrollbar = ttk.Scrollbar(list_frame)
+        scrollbar.pack(side="right", fill="y")
+        
+        listbox = tk.Listbox(list_frame, yscrollcommand=scrollbar.set, height=12)
+        listbox.pack(side="left", fill="both", expand=True)
+        scrollbar.config(command=listbox.yview)
+        
+        # Populate listbox
+        app_index = {}
+        for i, app in enumerate(apps):
+            display = app['name']
+            if default_app and app['desktop_file'] == default_app:
+                display += " (default)"
+            listbox.insert("end", display)
+            app_index[i] = app
             
-        app_var = tk.StringVar(value=apps[0] if apps else "")
-        app_combo = ttk.Combobox(dialog, values=apps, textvariable=app_var, state="readonly")
-        app_combo.pack(pady=5, padx=20, fill="x")
+        # Select first item
+        if apps:
+            listbox.select_set(0)
+            
+        # Set as default checkbox
+        set_default_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(main_frame, text="Set as default for this file type", 
+                       variable=set_default_var).pack(pady=10, anchor="w")
+        
+        # Button frame
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.pack(pady=(10, 0), fill="x")
         
         def do_open():
-            app = app_var.get()
+            selection = listbox.curselection()
+            if not selection:
+                return
+            app = app_index.get(selection[0])
             if app:
-                open_file_with(path, app)
+                # Save preference if checkbox is checked
+                if set_default_var.get():
+                    set_default_application(mime_type, app['desktop_file'])
+                    # Also save in our config
+                    if "mime_apps" not in self.config:
+                        self.config["mime_apps"] = {}
+                    self.config["mime_apps"][mime_type] = app['desktop_file']
+                    self.config_manager.save_config(self.config)
+                
+                # Launch the file
+                launch_application(path, app)
+                self.status_bar.update(f"Opening with {app['name']}: {path}")
             dialog.destroy()
-            
-        ttk.Button(dialog, text="Open", command=do_open).pack(pady=10)
+        
+        # Center the button
+        btn_frame.columnconfigure(0, weight=1)
+        open_btn = ttk.Button(btn_frame, text="Open", command=do_open, width=15)
+        open_btn.grid(row=0, column=0)
         
     def _copy_path_to_clipboard(self, path):
         """Copy file path to clipboard."""

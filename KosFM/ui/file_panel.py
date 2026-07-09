@@ -8,23 +8,30 @@ import tkinter as tk
 from tkinter import ttk
 
 from ..config import FILE_COLUMNS, PANEL_PADDING
+from ..utils.file_opener import open_file_default
 
 
 class FilePanel:
     """File listing panel widget."""
     
-    def __init__(self, parent, on_double_click_callback):
+    def __init__(self, parent, on_double_click_callback, on_file_click_callback=None, 
+                 on_context_menu_callback=None):
         """
         Initialize file panel.
         
         Args:
             parent: Parent widget (PanedWindow)
             on_double_click_callback: Function to call on double-click
+            on_file_click_callback: Function to call on file single-click
+            on_context_menu_callback: Function to call for context menu
         """
         self.parent = parent
         self.on_double_click = on_double_click_callback
+        self.on_file_click = on_file_click_callback
+        self.on_context_menu = on_context_menu_callback
         
         self._create_widget()
+        self._create_context_menu()
         
     def _create_widget(self):
         """Create the file panel widget."""
@@ -43,8 +50,6 @@ class FilePanel:
         
     def _create_path_bar(self):
         """Create the path bar."""
-        from ..config import FOLDER_ICON, FILE_ICON
-        
         self.path_frame = ttk.Frame(self.frame)
         self.path_frame.grid(row=0, column=0, sticky="ew", pady=(0, 5))
         self.path_frame.columnconfigure(1, weight=1)
@@ -97,8 +102,99 @@ class FilePanel:
         self.v_scrollbar.grid(row=0, column=1, sticky="ns")
         self.h_scrollbar.grid(row=1, column=0, sticky="ew")
         
-        # Bind double-click
+        # Bind events
         self.tree.bind("<Double-1>", self._on_double_click)
+        self.tree.bind("<Button-1>", self._on_single_click)
+        self.tree.bind("<Button-3>", self._on_right_click)  # Right-click
+        self.tree.bind("<Control-Button-1>", self._on_right_click)  # Ctrl+click (macOS)
+        
+    def _create_context_menu(self):
+        """Create right-click context menu."""
+        self.context_menu = tk.Menu(self.tree, tearoff=0)
+        self.context_menu.add_command(label="Open", command=self._on_context_open)
+        self.context_menu.add_command(label="Open With...", command=self._on_context_open_with)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="Copy Path", command=self._on_context_copy_path)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="Properties", command=self._on_context_properties)
+        
+    def _on_single_click(self, event):
+        """Handle single click - open files."""
+        item = self.tree.identify_row(event.y)
+        if not item:
+            return
+            
+        # Get the item's values
+        values = self.tree.item(item, "values")
+        if not values:
+            return
+            
+        name = values[0]
+        # Remove icon prefix
+        name = name.replace("📁 ", "").replace("📄 ", "")
+        
+        # Check if it's a file (not folder)
+        if hasattr(self, 'current_path') and self.current_path:
+            full_path = os.path.join(self.current_path, name)
+            if os.path.isfile(full_path):
+                # It's a file - open it
+                if self.on_file_click:
+                    self.on_file_click(full_path)
+                else:
+                    # Default behavior: open with system default
+                    open_file_default(full_path)
+                    
+    def _on_right_click(self, event):
+        """Handle right-click - show context menu."""
+        # Select item under cursor
+        item = self.tree.identify_row(event.y)
+        if item:
+            self.tree.selection_set(item)
+            # Get item info
+            values = self.tree.item(item, "values")
+            if values:
+                # Show context menu at cursor position
+                try:
+                    self.context_menu.tk_popup(event.x_root, event.y_root)
+                finally:
+                    self.context_menu.grab_release()
+                    
+    def _on_context_open(self):
+        """Context menu: Open."""
+        if self.on_context_menu:
+            self.on_context_menu("open", self._get_selected_item_path())
+            
+    def _on_context_open_with(self):
+        """Context menu: Open With."""
+        if self.on_context_menu:
+            self.on_context_menu("open_with", self._get_selected_item_path())
+            
+    def _on_context_copy_path(self):
+        """Context menu: Copy Path."""
+        if self.on_context_menu:
+            self.on_context_menu("copy_path", self._get_selected_item_path())
+            
+    def _on_context_properties(self):
+        """Context menu: Properties."""
+        if self.on_context_menu:
+            self.on_context_menu("properties", self._get_selected_item_path())
+            
+    def _get_selected_item_path(self):
+        """Get path of currently selected item."""
+        item = self.tree.selection()
+        if not item:
+            return None
+        values = self.tree.item(item[0], "values")
+        if not values:
+            return None
+        name = values[0].replace("📁 ", "").replace("📄 ", "")
+        if hasattr(self, 'current_path') and self.current_path:
+            return os.path.join(self.current_path, name)
+        return None
+        
+    def set_current_path(self, path):
+        """Set the current directory path."""
+        self.current_path = path
         
     def _on_double_click(self, event):
         """Handle double-click event."""

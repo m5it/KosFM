@@ -6,13 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.2.0] - 2026-07-09
+## [1.3.0] - 2026-07-09
 
 ### Added
-- **Modular Architecture**: Complete refactor from monolithic structure to organized modules
-  - New package structure: `KosFM/` with `ui/` and `utils/` subpackages
-  - Separated concerns: UI components, utilities, and main application
-  - Each module is focused and maintainable (30-300 lines)
-- **Resizable Panels**: Draggable divider between tree and file panels using `ttk.PanedWindow`
+- **File Opening**: Single-click to open files with default system application
+  - Cross-platform: Uses `os.startfile` (Windows), `open` (macOS), `xdg-open` (Linux)
+  - Shows status feedback when opening files
+- **Right-Click Context Menu**: Context menu on file items with options:
+  - **Open**: Open file with default application
+  - **Open With...**: Choose specific application to open file
+  - **Copy Path**: Copy full file path to clipboard
+  - **Properties**: Show file details dialog
+- **Open With Dialog**: Select from platform-specific applications (Notepad, TextEdit, gedit, etc.)
+- **Properties Dialog**: Display file information:
+  - Name, path, type, size
+  - Created, modified, accessed dates
+  - Permissions (Unix/Linux)
+- **File Opener Utility**: New `utils/file_opener.py` module for cross-platform file opening
+
+### Changed
+- **File Panel**: Enhanced with click handling and context menu support
+- **App Module**: Added dialog handlers for Open With and Properties
+
+## [1.2.0] - 2026-07-09
 - **Window State Persistence**: Saves and restores:
   - Window position (x, y)
   - Window size (width, height)
@@ -98,15 +114,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
-### v1.2.0 (2026-07-09)
-- 🏗️ **Major refactor**: Modular architecture
-- ✨ Resizable panels with draggable divider
-- ✨ Window state persistence (position, size, panel widths)
-- 📁 New project structure with organized packages
+### v1.3.0 (2026-07-09)
+- ✨ **File Opening**: Single-click to open files
+- ✨ **Context Menu**: Right-click menu with Open, Open With, Copy Path, Properties
+- ✨ **Open With Dialog**: Choose application to open files
+- ✨ **Properties Dialog**: View detailed file information
+- 📋 Cross-platform file opener utility
 
-### v1.1.0 (2026-07-09)
-- ✨ Added menu bar with File, View, and Help menus
-- ✨ Added Show/Hide Hidden Files option
+### v1.2.0 (2026-07-09)
 - ✨ Added Status Bar toggle
 - ✨ Added Keyboard Shortcuts and About dialogs
 

@@ -6,12 +6,14 @@ Wires together all UI components and utilities.
 import os
 import tkinter as tk
 from tkinter import ttk, messagebox
+import platform
 
 from .config import APP_NAME, WINDOW_SIZE, MIN_WINDOW_SIZE, TREE_WIDTH, DEFAULT_PATH
 from .utils.config_manager import ConfigManager
 from .utils.error_handler import handle_error
 from .utils.file_utils import format_size, format_time, get_file_type
 from .utils.platform_utils import get_root_directories
+from .utils.file_opener import open_file_default, open_file_with
 from .ui.tree_panel import TreePanel
 from .ui.file_panel import FilePanel
 from .ui.menu_bar import MenuBar
@@ -62,7 +64,6 @@ class KosFMApp:
         
     def _save_window_state(self):
         """Save current window state to config."""
-        # Get window geometry
         geometry = self.root.geometry()
         try:
             size, x, y = geometry.split('+')
@@ -74,7 +75,6 @@ class KosFMApp:
         except ValueError:
             pass
             
-        # Save panel width
         if hasattr(self, 'paned_window'):
             try:
                 sash_pos = self.paned_window.sashpos(0)
@@ -82,41 +82,33 @@ class KosFMApp:
             except:
                 pass
                 
-        # Save view options
         self.config["view"]["show_hidden_files"] = self.menu_bar.get_show_hidden_var().get()
         self.config["view"]["show_status_bar"] = self.menu_bar.get_show_status_var().get()
         
-        # Save to file
         self.config_manager.save_config(self.config)
         
     def setup_ui(self):
         """Initialize the user interface."""
-        # Create menu bar
         self._create_menu_bar()
         
-        # Main container
         self.main_frame = ttk.Frame(self.root, padding="5")
         self.main_frame.grid(row=0, column=0, sticky="nsew")
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         
-        # Create paned window for resizable panels
         self.paned_window = ttk.PanedWindow(self.main_frame, orient="horizontal")
         self.paned_window.grid(row=0, column=0, sticky="nsew")
         self.main_frame.columnconfigure(0, weight=1)
         self.main_frame.rowconfigure(0, weight=1)
         
-        # Create panels
         self._create_tree_panel()
         self._create_file_panel()
         
-        # Set initial sash position
         if "panel" in self.config and "left_width" in self.config["panel"]:
             self.paned_window.sashpos(0, self.config["panel"]["left_width"])
         else:
             self.paned_window.sashpos(0, TREE_WIDTH)
         
-        # Create status bar
         self._create_status_bar()
         
     def _create_menu_bar(self):
@@ -128,8 +120,6 @@ class KosFMApp:
             'toggle_status': self._toggle_status_bar,
         }
         self.menu_bar = MenuBar(self.root, handlers)
-        
-        # Apply saved view options
         self.menu_bar.get_show_hidden_var().set(self.config["view"]["show_hidden_files"])
         self.menu_bar.get_show_status_var().set(self.config["view"]["show_status_bar"])
         
@@ -146,11 +136,12 @@ class KosFMApp:
         """Create the file panel."""
         self.file_panel = FilePanel(
             self.paned_window,
-            on_double_click_callback=self._on_file_double_click
+            on_double_click_callback=self._on_file_double_click,
+            on_file_click_callback=self._on_file_click,
+            on_context_menu_callback=self._on_context_menu
         )
         self.file_panel.add_to_paned_window(weight=1)
         
-        # Bind controls
         self.file_panel.bind_up_button(self._go_to_parent)
         self.file_panel.bind_refresh_button(self._refresh_file_view)
         self.file_panel.bind_path_entry(self._on_path_entry)
@@ -166,7 +157,6 @@ class KosFMApp:
         print(f"Error: {message}")
         messagebox.showerror("Error", message)
         
-    @handle_error
     def navigate_to(self, path):
         """Navigate to a specific directory."""
         if not os.path.isdir(path):
@@ -176,6 +166,7 @@ class KosFMApp:
         self.status_bar.update(f"Loading: {path}")
         self.current_path = path
         self.file_panel.set_path(path)
+        self.file_panel.set_current_path(path)
         self._refresh_file_view()
         
     @handle_error
@@ -242,7 +233,6 @@ class KosFMApp:
             entries = []
             with os.scandir(self.current_path) as it:
                 for entry in it:
-                    # Filter hidden files
                     if not self.menu_bar.get_show_hidden_var().get() and entry.name.startswith('.'):
                         continue
                     entries.append(entry)
@@ -281,6 +271,102 @@ class KosFMApp:
             self.file_panel.insert_item("", f"Error: {e}", "", "", "")
             self.status_bar.update(f"Error: {e}")
             
+    def _on_file_click(self, path):
+        """Handle single click on file - open with default app."""
+        if os.path.isfile(path):
+            self.status_bar.update(f"Opening: {path}")
+            success = open_file_default(path)
+            if not success:
+                self._show_error(f"Could not open file: {path}")
+                
+    def _on_context_menu(self, action, path):
+        """Handle context menu actions."""
+        if not path:
+            return
+            
+        if action == "open":
+            self._on_file_click(path)
+        elif action == "open_with":
+            self._show_open_with_dialog(path)
+        elif action == "copy_path":
+            self._copy_path_to_clipboard(path)
+        elif action == "properties":
+            self._show_properties_dialog(path)
+            
+    def _show_open_with_dialog(self, path):
+        """Show Open With dialog."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Open With")
+        dialog.geometry("300x150")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        ttk.Label(dialog, text=f"Open: {os.path.basename(path)}").pack(pady=10)
+        
+        system = platform.system()
+        apps = []
+        if system == "Windows":
+            apps = ["notepad", "mspaint", "explorer"]
+        elif system == "Darwin":
+            apps = ["TextEdit", "Preview", "Safari"]
+        else:
+            apps = ["gedit", "gimp", "firefox", "vlc"]
+            
+        app_var = tk.StringVar(value=apps[0] if apps else "")
+        app_combo = ttk.Combobox(dialog, values=apps, textvariable=app_var, state="readonly")
+        app_combo.pack(pady=5, padx=20, fill="x")
+        
+        def do_open():
+            app = app_var.get()
+            if app:
+                open_file_with(path, app)
+            dialog.destroy()
+            
+        ttk.Button(dialog, text="Open", command=do_open).pack(pady=10)
+        
+    def _copy_path_to_clipboard(self, path):
+        """Copy file path to clipboard."""
+        self.root.clipboard_clear()
+        self.root.clipboard_append(path)
+        self.status_bar.update(f"Copied to clipboard: {path}")
+        
+    def _show_properties_dialog(self, path):
+        """Show file properties dialog."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Properties")
+        dialog.geometry("400x300")
+        dialog.transient(self.root)
+        
+        try:
+            stat = os.stat(path)
+            
+            info = {
+                "Name": os.path.basename(path),
+                "Path": path,
+                "Type": "Folder" if os.path.isdir(path) else "File",
+                "Size": format_size(stat.st_size) if os.path.isfile(path) else "N/A",
+                "Created": format_time(stat.st_ctime),
+                "Modified": format_time(stat.st_mtime),
+                "Accessed": format_time(stat.st_atime),
+            }
+            
+            if platform.system() != "Windows":
+                info["Permissions"] = oct(stat.st_mode)[-3:]
+                
+        except OSError as e:
+            info = {"Error": str(e)}
+            
+        frame = ttk.Frame(dialog, padding="20")
+        frame.pack(fill="both", expand=True)
+        
+        row = 0
+        for key, value in info.items():
+            ttk.Label(frame, text=f"{key}:", font=("TkDefaultFont", 10, "bold")).grid(row=row, column=0, sticky="w", pady=2)
+            ttk.Label(frame, text=str(value), wraplength=250).grid(row=row, column=1, sticky="w", padx=10, pady=2)
+            row += 1
+            
+        ttk.Button(dialog, text="OK", command=dialog.destroy).pack(pady=10)
+        
     def _toggle_hidden_files(self):
         """Toggle hidden files visibility."""
         self._refresh_file_view()
@@ -330,6 +416,8 @@ class KosFMApp:
             if os.path.isdir(full_path):
                 self.status_bar.update(f"Opening: {full_path}")
                 self.navigate_to(full_path)
+            else:
+                self._on_file_click(full_path)
         except Exception as e:
             self._show_error(f"Double-click error: {e}")
             

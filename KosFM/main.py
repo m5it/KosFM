@@ -10,7 +10,6 @@ import tkinter as tk
 from KosFM.app import KosFMApp
 from KosFM.config import APP_NAME
 
-
 def main():
     """Application entry point."""
     try:

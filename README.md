@@ -1,12 +1,16 @@
 # KosFM
 
-A simple, cross-platform file manager built with Python and tkinter. Features a dual-pane interface with a directory tree on the left and file listing on the right.
+A simple, cross-platform file manager built with Python and tkinter. Features a dual-pane interface with a resizable directory tree on the left and file listing on the right.
+
+![Python Version](https://img.shields.io/badge/python-3.6+-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## Features
 
-- **Dual-Pane Interface**: Directory tree on the left, file listing on the right
+- **Dual-Pane Interface**: Resizable directory tree on the left, file listing on the right
 - **Lazy Loading**: Directories load on-demand for better performance
 - **File Details**: View file size, modification date, and type
+- **Resizable Panels**: Drag the divider to adjust panel widths
 - **Navigation**: 
   - Click directories in tree to view contents
   - Double-click folders to navigate into them
@@ -14,6 +18,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
   - Path bar for direct navigation
 - **Menu Bar**: File, View, and Help menus with keyboard shortcuts
 - **View Options**: Toggle hidden files and status bar visibility
+- **Window State**: Saves position, size, and panel widths between sessions
 - **Icons**: Visual distinction with emoji icons (📁 folders, 📄 files)
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 - **Error Handling**: Graceful handling of permission errors and inaccessible directories
@@ -23,7 +28,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ File  View  Help                           [Window]   │
+│ File  View  Help                           [KosFM]    │
 ├──────────────────┬────────────────────────────────────┤
 │ 📁 Directory     │ ⬆ Up  [/home/user/projects]  🔄    │
 │ ├── 📁 home      ├────────────────────────────────────┤
@@ -36,25 +41,30 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 └──────────────────┴────────────────────────────────────┘
 ```
 
-## Menu Bar
+## Project Structure
 
-### File Menu
-| Option | Shortcut | Description |
-|--------|----------|-------------|
-| Refresh | Ctrl+R | Reload current directory |
-| Exit | Ctrl+Q | Close application |
-
-### View Menu
-| Option | Description |
-|--------|-------------|
-| Show Hidden Files | Toggle visibility of hidden files (.*) |
-| Show Status Bar | Toggle status bar at bottom |
-
-### Help Menu
-| Option | Description |
-|--------|-------------|
-| Keyboard Shortcuts | Show all available shortcuts |
-| About | Application information |
+```
+KosFM/
+├── main.py                 # Entry point (27 lines)
+├── KosFM/                  # Main package
+│   ├── __init__.py
+│   ├── config.py           # Constants and settings
+│   ├── app.py              # Main application controller
+│   ├── ui/                 # UI components
+│   │   ├── __init__.py
+│   │   ├── tree_panel.py   # Directory tree widget
+│   │   ├── file_panel.py   # File listing widget
+│   │   ├── menu_bar.py     # Menu bar
+│   │   └── status_bar.py   # Status bar
+│   └── utils/              # Utility modules
+│       ├── __init__.py
+│       ├── config_manager.py # Config save/load
+│       ├── error_handler.py  # Error handling
+│       ├── file_utils.py     # File formatting
+│       └── platform_utils.py # Platform-specific code
+├── README.md               # This file
+└── CHANGELOG.md            # Version history
+```
 
 ## Requirements
 
@@ -83,6 +93,7 @@ python main.py
 | Click "Up" button | Go to parent directory |
 | Type path + Enter | Navigate to specific path |
 | Click "Refresh" | Reload current directory |
+| Drag divider | Resize left/right panels |
 
 ### Keyboard Shortcuts
 
@@ -91,26 +102,32 @@ python main.py
 | Ctrl+R | Refresh current directory |
 | Ctrl+Q | Exit application |
 
-## Project Structure
+## Menu Bar
 
-```
-file-manager/
-├── main.py           # Main application file (20KB)
-├── config.py         # Configuration constants
-├── requirements.txt  # Dependencies (empty - uses stdlib)
-├── assets/           # Future: icons and resources
-├── README.md         # This file
-└── CHANGELOG.md      # Version history
-```
+### File Menu
+| Option | Shortcut | Description |
+|--------|----------|-------------|
+| Refresh | Ctrl+R | Reload current directory |
+| Exit | Ctrl+Q | Close application |
+
+### View Menu
+| Option | Description |
+|--------|-------------|
+| Show Hidden Files | Toggle visibility of hidden files (.*) |
+| Show Status Bar | Toggle status bar at bottom |
+
+### Help Menu
+| Option | Description |
+|--------|-------------|
+| Keyboard Shortcuts | Show all available shortcuts |
+| About | Application information |
 
 ## Configuration
 
-Edit `config.py` to customize:
-
-- `WINDOW_SIZE` - Default window size (default: "1200x700")
-- `TREE_WIDTH` - Width of left panel (default: 300)
-- `DEFAULT_PATH` - Starting directory (default: current directory)
-- `FOLDER_ICON` / `FILE_ICON` - Change icons
+Configuration is automatically saved to `~/.config/KosFM/config.json` and includes:
+- Window position and size
+- Panel divider position
+- View options (show hidden files, show status bar)
 
 ## Platform Support
 
@@ -120,20 +137,17 @@ Edit `config.py` to customize:
 | macOS | ✅ Supported | Shows / and /Users |
 | Linux | ✅ Supported | Shows / and /home |
 
-## Keyboard Shortcuts
+## Modular Architecture
 
-- `Ctrl+R` - Refresh
-- `Ctrl+Q` - Exit
-- `Enter` (in path bar) - Navigate to entered path
-- `Double-click` - Open folder
+The application is organized into focused modules:
 
-## Error Handling
+- **main.py**: Minimal entry point
+- **KosFM/app.py**: Main application controller that wires components together
+- **KosFM/ui/**: Self-contained UI widgets
+- **KosFM/utils/**: Reusable utility functions
+- **KosFM/config.py**: Centralized constants
 
-The application handles common errors gracefully:
-
-- **Permission Denied**: Shows "Access Denied" message
-- **File Not Found**: Error dialog with details
-- **System Errors**: User-friendly error messages
+This structure makes the code easy to maintain, test, and extend.
 
 ## Future Enhancements
 
@@ -144,7 +158,7 @@ The application handles common errors gracefully:
 - [ ] Bookmarks/favorites
 - [ ] Dark theme
 - [ ] Additional keyboard shortcuts
-- [ ] File type icons (different icons for different file types)
+- [ ] File type icons
 - [ ] Drag and drop support
 
 ## Contributing
@@ -161,4 +175,4 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ---
 
-**Current Version: 1.1.0** - Now with menu bar and view options!
+**Current Version: 1.2.0** - Now with modular architecture and resizable panels!

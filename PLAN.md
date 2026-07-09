@@ -1,54 +1,47 @@
-# Plan: Add Menu Bar with View Options
-## ID: 1783574114.413694
-## Created: 2026-07-09 05:15:14
+# Plan: Refactor KosFM into Modular Structure
+## ID: 1783585245.152786
+## Created: 2026-07-09 08:20:45
 ## Status: in_progress
 
 ### Goal:
-Add a menu bar at the top of the file manager window with File, View, and Help menus. Include options for showing/hiding hidden files, refresh, and other useful features.
+Split the monolithic main.py into logical, smaller modules with clear separation of concerns. Create a proper package structure with main.py as entry point, separate modules for UI components, utilities, and configuration management.
 
-### Tasks (14):
-1. [completed] Create the left panel with a ttk.Treeview widget for display
-   ID: 1783574379.203344
-   Progress logs: 1 entries
+### Tasks (12):
+1. [pending] Create Directory Structure
+   ID: 1783585257.3764062
 
-2. [completed] Populate the tree view with initial root directories (/, /ho
-   ID: 1783574379.2035208
+2. [pending] Create config_manager.py Module
+   ID: 1783585257.3765445
 
-3. [completed] Implement lazy loading so directories are only scanned when 
-   ID: 1783574379.2043667
+3. [pending] Create error_handler.py Module
+   ID: 1783585257.4148357
 
-4. [completed] Create the center/right panel with a ttk.Treeview showing fi
-   ID: 1783574379.2044702
+4. [pending] Create file_utils.py Module
+   ID: 1783585257.4149961
 
-5. [completed] Link the tree view selection event to update the file listin
-   ID: 1783574379.204562
+5. [pending] Create platform_utils.py Module
+   ID: 1783585257.4151156
 
-6. [completed] Add double-click navigation in file view to enter folders. I
-   ID: 1783574379.2046585
+6. [pending] Create tree_panel.py Module
+   ID: 1783585257.4152308
 
-7. [completed] Add visual distinction between files and folders using emoji
-   ID: 1783574379.204757
+7. [pending] Create file_panel.py Module
+   ID: 1783585257.4153466
 
-8. [completed] Add proper error handling for permission denied errors, inac
-   ID: 1783574379.2048652
+8. [pending] Create menu_bar.py Module
+   ID: 1783585257.4154553
 
-9. [completed] Add a refresh button to reload current directory contents. I
-   ID: 1783574379.2049706
+9. [pending] Create status_bar.py Module
+   ID: 1783585257.415565
 
-10. [pending] Create Menu Bar Framework
-   ID: 1783575112.7835135
+10. [pending] Create app.py Main Application Module
+   ID: 1783585257.4156744
 
-11. [pending] Implement File Menu
-   ID: 1783575112.7837615
+11. [pending] Update main.py Entry Point
+   ID: 1783585257.4157982
 
-12. [pending] Add Show/Hide Hidden Files Option
-   ID: 1783575112.8220062
-
-13. [pending] Add Status Bar Toggle
-   ID: 1783575112.8222003
-
-14. [pending] Add Help Menu
-   ID: 1783575112.8223696
+12. [pending] Update config.py and Test Refactored Structure
+   ID: 1783585257.4159274
 
 ---
 

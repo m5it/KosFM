@@ -23,5 +23,8 @@ def main():
         sys.exit(1)
 
 
+
 if __name__ == "__main__":
+    # First comment before main
+    # Second comment before main
     main()

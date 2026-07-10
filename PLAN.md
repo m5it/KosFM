@@ -1,35 +1,27 @@
-# Plan: Linux File Associations with xdg-mime
-## ID: 1783613989.3948464
-## Created: 2026-07-09 16:19:49
+# Plan: Refactor KosFM/app.py into smaller modules
+## ID: 1783654604.9569938
+## Created: 2026-07-10 03:36:44
 ## Status: in_progress
 
 ### Goal:
-Implement proper Linux file association handling using xdg-mime. Detect MIME types, find available applications from .desktop files, open files with correct apps, and save user preferences for "Open With" selections.
+Split the large app.py file into smaller, focused modules:
+1. Create dialogs.py for dialog handlers (Open With, Properties)
+2. Create navigation.py for navigation functions
+3. Keep app.py as the main controller but thinner
+4. Ensure all imports and references are updated correctly
 
-### Tasks (8):
-1. [pending] Create MIME Type Detector
-   ID: 1783613998.7459292
+### Tasks (4):
+1. [pending] Create KosFM/dialogs.py module
+   ID: 1783654610.18979
 
-2. [pending] Find Applications for MIME Type
-   ID: 1783613998.7460725
+2. [pending] Create KosFM/navigation.py module
+   ID: 1783654610.1901152
 
-3. [pending] Get Default Application
-   ID: 1783613998.7844386
+3. [pending] Refactor KosFM/app.py to use new modules
+   ID: 1783654610.1904817
 
-4. [pending] Parse .desktop Files
-   ID: 1783613998.78456
-
-5. [pending] Launch Application
-   ID: 1783613998.784661
-
-6. [pending] Create Open With Dialog
-   ID: 1783613998.78476
-
-7. [pending] Save Application Preferences
-   ID: 1783613998.7848763
-
-8. [pending] Integrate xdg-mime into File Opening
-   ID: 1783613998.7853699
+4. [pending] Update KosFM/__init__.py if needed
+   ID: 1783654610.1905978
 
 ---
 

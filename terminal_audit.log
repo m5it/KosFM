@@ -1,0 +1,9 @@
+[2026-07-10 03:06:21] CMD: python3 -m py_compile install.py | SUCCESS: True | OUTPUT_LEN: 0
+[2026-07-10 03:09:56] CMD: python3 -m py_compile install.py && echo Syntax OK | SUCCESS: True | OUTPUT_LEN: 49
+[2026-07-10 03:11:37] CMD: python3 -m py_compile install.py | SUCCESS: True | OUTPUT_LEN: 0
+[2026-07-10 03:29:25] CMD: python3 -m py_compile KosFM/app.py | SUCCESS: True | OUTPUT_LEN: 68
+[2026-07-10 03:30:20] CMD: python3 -m py_compile KosFM/app.py | SUCCESS: True | OUTPUT_LEN: 0
+[2026-07-10 03:33:41] CMD: python3 -m py_compile KosFM/app.py | SUCCESS: True | OUTPUT_LEN: 0
+[2026-07-10 03:33:57] CMD: python3 -m py_compile KosFM/app.py | SUCCESS: True | OUTPUT_LEN: 123
+[2026-07-10 03:35:01] CMD: python3 -m py_compile KosFM/app.py | SUCCESS: True | OUTPUT_LEN: 0
+[2026-07-10 03:38:28] CMD: python3 -m py_compile KosFM/app.py KosFM/dialogs.py KosFM/navigation.py | SUCCESS: True | OUTPUT_LEN: 0

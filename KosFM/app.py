@@ -5,9 +5,9 @@ Wires together all UI components and utilities.
 """
 
 import os
+import sys
 import tkinter as tk
 from tkinter import ttk, messagebox
-import platform
 from pathlib import Path
 
 from .config import APP_NAME, WINDOW_SIZE, MIN_WINDOW_SIZE, TREE_WIDTH, DEFAULT_PATH
@@ -28,6 +28,8 @@ from .ui.tree_panel import TreePanel
 from .ui.file_panel import FilePanel
 from .ui.menu_bar import MenuBar
 from .ui.status_bar import StatusBar
+from .dialogs import OpenWithDialog, PropertiesDialog
+from .navigation import NavigationManager
 
 
 class KosFMApp:
@@ -41,20 +43,27 @@ class KosFMApp:
         self.config_manager = ConfigManager()
         self.config = self.config_manager.load_config()
         
+        # Initialize navigation manager
+        self.nav = NavigationManager(self)
+        
         # Apply saved window geometry
         self._apply_window_geometry()
         self.root.minsize(*MIN_WINDOW_SIZE)
         
         self.current_path = None
+        self._sash_save_timer = None
         
         # Create UI
         self.setup_ui()
         
+        # Bind to sash movement for saving position
+        self._bind_sash_save()
+        
         # Populate tree roots
-        self.populate_tree_roots()
+        self.nav.populate_tree_roots()
         
         # Set initial directory
-        self.navigate_to(os.path.expanduser(DEFAULT_PATH))
+        self.nav.navigate_to(os.path.expanduser(DEFAULT_PATH))
         
         # Bind window close event
         self.root.protocol("WM_DELETE_WINDOW", self._on_window_close)
@@ -69,6 +78,12 @@ class KosFMApp:
         
     def _on_window_close(self):
         """Handle window close event."""
+        # Cancel any pending sash save timer
+        if self._sash_save_timer:
+            self.root.after_cancel(self._sash_save_timer)
+            self._sash_save_timer = None
+            self._save_sash_position()
+        
         self._save_window_state()
         self.root.destroy()
         
@@ -85,17 +100,44 @@ class KosFMApp:
         except ValueError:
             pass
             
+        # Also save sash position as backup
         if hasattr(self, 'paned_window'):
             try:
                 sash_pos = self.paned_window.sashpos(0)
+                if "panel" not in self.config:
+                    self.config["panel"] = {}
                 self.config["panel"]["left_width"] = sash_pos
             except:
                 pass
-                
+            
         self.config["view"]["show_hidden_files"] = self.menu_bar.get_show_hidden_var().get()
         self.config["view"]["show_status_bar"] = self.menu_bar.get_show_status_var().get()
         
         self.config_manager.save_config(self.config)
+        
+    def _bind_sash_save(self):
+        """Bind to sash movement to save panel width."""
+        self.paned_window.bind('<ButtonRelease-1>', self._on_sash_release)
+        
+    def _on_sash_release(self, event):
+        """Handle sash release - save position after a delay."""
+        if self._sash_save_timer:
+            self.root.after_cancel(self._sash_save_timer)
+        self._sash_save_timer = self.root.after(500, self._save_sash_position)
+        
+    def _save_sash_position(self):
+        """Save the current sash position to config."""
+        try:
+            sash_pos = self.paned_window.sashpos(0)
+            if "panel" not in self.config:
+                self.config["panel"] = {}
+            self.config["panel"]["left_width"] = sash_pos
+            self.config_manager.save_config(self.config)
+            print(f"Saved panel width: {sash_pos}")
+        except Exception as e:
+            print(f"Could not save sash position: {e}")
+        finally:
+            self._sash_save_timer = None
         
     def setup_ui(self):
         """Initialize the user interface."""
@@ -114,12 +156,22 @@ class KosFMApp:
         self._create_tree_panel()
         self._create_file_panel()
         
+        # Restore sash position after window is fully rendered
         if "panel" in self.config and "left_width" in self.config["panel"]:
-            self.paned_window.sashpos(0, self.config["panel"]["left_width"])
+            saved_width = self.config["panel"]["left_width"]
+            self.root.after(100, lambda: self._restore_sash_position(saved_width))
         else:
             self.paned_window.sashpos(0, TREE_WIDTH)
         
         self._create_status_bar()
+        
+    def _restore_sash_position(self, width):
+        """Restore sash position after window is rendered."""
+        try:
+            self.paned_window.sashpos(0, width)
+            print(f"Restored panel width: {width}")
+        except Exception as e:
+            print(f"Could not restore sash position: {e}")
         
     def _create_menu_bar(self):
         """Create menu bar with handlers."""
@@ -137,8 +189,8 @@ class KosFMApp:
         """Create the tree panel."""
         self.tree_panel = TreePanel(
             self.paned_window,
-            on_select_callback=self._on_tree_select,
-            on_expand_callback=self._on_tree_expand
+            on_select_callback=self.nav.on_tree_select,
+            on_expand_callback=self.nav.on_tree_expand
         )
         self.tree_panel.add_to_paned_window(weight=0)
         
@@ -152,9 +204,9 @@ class KosFMApp:
         )
         self.file_panel.add_to_paned_window(weight=1)
         
-        self.file_panel.bind_up_button(self._go_to_parent)
+        self.file_panel.bind_up_button(self.nav.go_to_parent)
         self.file_panel.bind_refresh_button(self._refresh_file_view)
-        self.file_panel.bind_path_entry(self._on_path_entry)
+        self.file_panel.bind_path_entry(self.nav.on_path_entry)
         
     def _create_status_bar(self):
         """Create status bar."""
@@ -167,70 +219,7 @@ class KosFMApp:
         print(f"Error: {message}")
         messagebox.showerror("Error", message)
         
-    def navigate_to(self, path):
-        """Navigate to a specific directory."""
-        if not os.path.isdir(path):
-            self.status_bar.update(f"Invalid directory: {path}")
-            return
-            
-        self.status_bar.update(f"Loading: {path}")
-        self.current_path = path
-        self.file_panel.set_path(path)
-        self.file_panel.set_current_path(path)
-        self._refresh_file_view()
-        
     @handle_error
-    def populate_tree_roots(self):
-        """Populate tree with root directories."""
-        roots = get_root_directories()
-        for path, name in roots:
-            has_children = self._has_subdirectories(path)
-            self.tree_panel.insert_node("", path, name, has_children)
-            
-    def _has_subdirectories(self, path):
-        """Check if directory has subdirectories."""
-        try:
-            with os.scandir(path) as entries:
-                for entry in entries:
-                    if entry.is_dir(follow_symlinks=False):
-                        return True
-        except (PermissionError, OSError):
-            pass
-        return False
-        
-    def _on_tree_expand(self, item, path):
-        """Handle tree node expansion."""
-        try:
-            dirs = []
-            with os.scandir(path) as entries:
-                for entry in entries:
-                    if entry.is_dir(follow_symlinks=False):
-                        has_children = self._has_subdirectories(entry.path)
-                        dirs.append((entry.name, entry.path, has_children))
-                        
-            dirs.sort(key=lambda x: x[0].lower())
-            
-            for name, full_path, has_children in dirs:
-                self.tree_panel.insert_node(item, full_path, name, has_children)
-                
-        except PermissionError:
-            pass
-        except OSError as e:
-            print(f"Error loading directory {path}: {e}")
-            
-    def _on_tree_select(self, event):
-        """Handle tree selection."""
-        try:
-            item = self.tree_panel.get_selection()
-            if not item:
-                return
-            path = self.tree_panel.get_item_path(item[0])
-            if not path or not os.path.isdir(path):
-                return
-            self.navigate_to(path)
-        except Exception as e:
-            self._show_error(f"Tree selection error: {e}")
-            
     def _refresh_file_view(self):
         """Refresh the file view."""
         try:
@@ -284,14 +273,10 @@ class KosFMApp:
     def _on_file_click(self, path):
         """Handle single click on file - open with default app."""
         if os.path.isfile(path):
-            # Get MIME type
             mime_type = get_mime_type(path)
-            
-            # Check if user has saved preference for this MIME type
             saved_app = self.config.get("mime_apps", {}).get(mime_type)
             
             if saved_app:
-                # Use saved application
                 desktop_path = self._find_desktop_file(saved_app)
                 if desktop_path:
                     app_info = parse_desktop_file(desktop_path)
@@ -300,7 +285,6 @@ class KosFMApp:
                         launch_application(path, app_info)
                         return
             
-            # Fall back to xdg-open
             self.status_bar.update(f"Opening: {path}")
             open_file_with_default(path)
                 
@@ -325,142 +309,20 @@ class KosFMApp:
         if action == "open":
             self._on_file_click(path)
         elif action == "open_with":
-            self._show_open_with_dialog(path)
+            dialog = OpenWithDialog(self.root, path, self.config_manager, 
+                                   self.config, self.status_bar.update)
+            dialog.show()
         elif action == "copy_path":
             self._copy_path_to_clipboard(path)
         elif action == "properties":
-            self._show_properties_dialog(path)
+            dialog = PropertiesDialog(self.root, path)
+            dialog.show()
             
-    def _show_open_with_dialog(self, path):
-        """Show Open With dialog with xdg-mime apps."""
-        mime_type = get_mime_type(path)
-        if not mime_type:
-            self._show_error(f"Could not determine file type: {path}")
-            return
-            
-        # Find all apps for this MIME type
-        apps = find_applications_for_mime_type(mime_type)
-        
-        if not apps:
-            self._show_error(f"No applications found for {mime_type}")
-            return
-            
-        # Get current default
-        default_app = get_default_application(mime_type)
-        
-        dialog = tk.Toplevel(self.root)
-        dialog.title(f"Open With - {os.path.basename(path)}")
-        dialog.geometry("450x400")
-        dialog.transient(self.root)
-        dialog.grab_set()
-        dialog.resizable(False, False)
-        
-        # Main container with padding
-        main_frame = ttk.Frame(dialog, padding="10")
-        main_frame.pack(fill="both", expand=True)
-        
-        ttk.Label(main_frame, text=f"File type: {mime_type}").pack(pady=(0, 10), anchor="w")
-        
-        # Create listbox with scrollbar
-        list_frame = ttk.Frame(main_frame)
-        list_frame.pack(pady=5, fill="both", expand=True)
-        
-        scrollbar = ttk.Scrollbar(list_frame)
-        scrollbar.pack(side="right", fill="y")
-        
-        listbox = tk.Listbox(list_frame, yscrollcommand=scrollbar.set, height=12)
-        listbox.pack(side="left", fill="both", expand=True)
-        scrollbar.config(command=listbox.yview)
-        
-        # Populate listbox
-        app_index = {}
-        for i, app in enumerate(apps):
-            display = app['name']
-            if default_app and app['desktop_file'] == default_app:
-                display += " (default)"
-            listbox.insert("end", display)
-            app_index[i] = app
-            
-        # Select first item
-        if apps:
-            listbox.select_set(0)
-            
-        # Set as default checkbox
-        set_default_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(main_frame, text="Set as default for this file type", 
-                       variable=set_default_var).pack(pady=10, anchor="w")
-        
-        # Button frame
-        btn_frame = ttk.Frame(main_frame)
-        btn_frame.pack(pady=(10, 0), fill="x")
-        
-        def do_open():
-            selection = listbox.curselection()
-            if not selection:
-                return
-            app = app_index.get(selection[0])
-            if app:
-                # Save preference if checkbox is checked
-                if set_default_var.get():
-                    set_default_application(mime_type, app['desktop_file'])
-                    # Also save in our config
-                    if "mime_apps" not in self.config:
-                        self.config["mime_apps"] = {}
-                    self.config["mime_apps"][mime_type] = app['desktop_file']
-                    self.config_manager.save_config(self.config)
-                
-                # Launch the file
-                launch_application(path, app)
-                self.status_bar.update(f"Opening with {app['name']}: {path}")
-            dialog.destroy()
-        
-        # Center the button
-        btn_frame.columnconfigure(0, weight=1)
-        open_btn = ttk.Button(btn_frame, text="Open", command=do_open, width=15)
-        open_btn.grid(row=0, column=0)
-        
     def _copy_path_to_clipboard(self, path):
         """Copy file path to clipboard."""
         self.root.clipboard_clear()
         self.root.clipboard_append(path)
         self.status_bar.update(f"Copied to clipboard: {path}")
-        
-    def _show_properties_dialog(self, path):
-        """Show file properties dialog."""
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Properties")
-        dialog.geometry("400x300")
-        dialog.transient(self.root)
-        
-        try:
-            stat = os.stat(path)
-            
-            info = {
-                "Name": os.path.basename(path),
-                "Path": path,
-                "Type": "Folder" if os.path.isdir(path) else "File",
-                "Size": format_size(stat.st_size) if os.path.isfile(path) else "N/A",
-                "Created": format_time(stat.st_ctime),
-                "Modified": format_time(stat.st_mtime),
-                "Accessed": format_time(stat.st_atime),
-            }
-            
-            if platform.system() != "Windows":
-                info["Permissions"] = oct(stat.st_mode)[-3:]
-                
-        except OSError as e:
-            info = {"Error": str(e)}
-            
-        frame = ttk.Frame(dialog, padding="20")
-        frame.pack(fill="both", expand=True)
-        
-        row = 0
-        for key, value in info.items():
-            ttk.Label(frame, text=f"{key}:", font=("TkDefaultFont", 10, "bold")).grid(row=row, column=0, sticky="w", pady=2)
-            ttk.Label(frame, text=str(value), wraplength=250).grid(row=row, column=1, sticky="w", padx=10, pady=2)
-            row += 1
-            
-        ttk.Button(dialog, text="OK", command=dialog.destroy).pack(pady=10)
         
     def _toggle_hidden_files(self):
         """Toggle hidden files visibility."""
@@ -472,29 +334,6 @@ class KosFMApp:
             self.status_bar.show()
         else:
             self.status_bar.hide()
-            
-    def _go_to_parent(self):
-        """Navigate to parent directory."""
-        try:
-            if self.current_path:
-                parent = os.path.dirname(self.current_path)
-                if parent and parent != self.current_path:
-                    self.navigate_to(parent)
-        except Exception as e:
-            self._show_error(f"Navigation error: {e}")
-            
-    def _on_path_entry(self, event):
-        """Handle path entry."""
-        try:
-            path = self.file_panel.path_var.get()
-            if os.path.isdir(path):
-                self.status_bar.update(f"Navigating to: {path}")
-                self.navigate_to(path)
-            else:
-                messagebox.showerror("Error", f"Directory not found: {path}")
-                self.status_bar.update("Directory not found")
-        except Exception as e:
-            self._show_error(f"Path entry error: {e}")
             
     def _on_file_double_click(self, event):
         """Handle double-click on file."""
@@ -510,7 +349,7 @@ class KosFMApp:
             full_path = os.path.join(self.current_path, name)
             if os.path.isdir(full_path):
                 self.status_bar.update(f"Opening: {full_path}")
-                self.navigate_to(full_path)
+                self.nav.navigate_to(full_path)
             else:
                 self._on_file_click(full_path)
         except Exception as e:

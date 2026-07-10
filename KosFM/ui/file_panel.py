@@ -1,3 +1,4 @@
+
 """
 File panel widget for KosFM.
 Displays file listing with details.
@@ -114,27 +115,34 @@ class FilePanel:
         self.context_menu.add_command(label="Open", command=self._on_context_open)
         self.context_menu.add_command(label="Open With...", command=self._on_context_open_with)
         self.context_menu.add_separator()
-        self.context_menu.add_command(label="Copy Path", command=self._on_context_copy_path)
+        self.context_menu.add_command(label="Copy", command=self._on_context_copy)
+        self.context_menu.add_command(label="Paste", command=self._on_context_paste)
         self.context_menu.add_separator()
-        self.context_menu.add_command(label="Properties", command=self._on_context_properties)
-        
+        self.context_menu.add_command(label="Rename", command=self._on_context_rename)
+        self.context_menu.add_separator()
+        self.context_menu.add_command(label="Remove", command=self._on_context_remove)
+        self.context_menu.add_separator()
+
     def _on_single_click(self, event):
-        """Handle single click - open files."""
+        """Handle single click - just select item, don't open."""
+        # Close context menu if open
+        self.context_menu.unpost()
+        
         item = self.tree.identify_row(event.y)
         if not item:
             return
             
-        # Get the item's values
-        values = self.tree.item(item, "values")
-        if not values:
-            return
-            
-        name = values[0]
-        # Remove icon prefix
-        name = name.replace("📁 ", "").replace("📄 ", "")
+        # Select the item
+        self.tree.selection_set(item)
         
-        # Check if it's a file (not folder)
-        if hasattr(self, 'current_path') and self.current_path:
+        # Call the file click callback if set (for custom handling)
+        if self.on_file_click:
+            values = self.tree.item(item, "values")
+            if values:
+                name = values[0].replace("📁 ", "").replace("📄 ", "")
+                if hasattr(self, 'current_path') and self.current_path:
+                    full_path = os.path.join(self.current_path, name)
+                    self.on_file_click(full_path)
             full_path = os.path.join(self.current_path, name)
             if os.path.isfile(full_path):
                 # It's a file - open it
@@ -146,6 +154,9 @@ class FilePanel:
                     
     def _on_right_click(self, event):
         """Handle right-click - show context menu."""
+        # Close any existing menu first
+        self.context_menu.unpost()
+        
         # Select item under cursor
         item = self.tree.identify_row(event.y)
         if item:
@@ -168,6 +179,26 @@ class FilePanel:
         """Context menu: Open With."""
         if self.on_context_menu:
             self.on_context_menu("open_with", self._get_selected_item_path())
+            
+    def _on_context_copy(self):
+        """Context menu: Copy."""
+        if self.on_context_menu:
+            self.on_context_menu("copy", self._get_selected_item_path())
+            
+    def _on_context_paste(self):
+        """Context menu: Paste."""
+        if self.on_context_menu:
+            self.on_context_menu("paste", self.current_path)
+            
+    def _on_context_rename(self):
+        """Context menu: Rename."""
+        if self.on_context_menu:
+            self.on_context_menu("rename", self._get_selected_item_path())
+            
+    def _on_context_remove(self):
+        """Context menu: Remove."""
+        if self.on_context_menu:
+            self.on_context_menu("remove", self._get_selected_item_path())
             
     def _on_context_copy_path(self):
         """Context menu: Copy Path."""

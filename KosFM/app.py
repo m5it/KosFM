@@ -1,4 +1,3 @@
-
 """
 Main application module for KosFM.
 Wires together all UI components and utilities.
@@ -6,8 +5,9 @@ Wires together all UI components and utilities.
 
 import os
 import sys
+import shutil
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, simpledialog
 from pathlib import Path
 
 from .config import APP_NAME, WINDOW_SIZE, MIN_WINDOW_SIZE, TREE_WIDTH, DEFAULT_PATH
@@ -45,6 +45,9 @@ class KosFMApp:
         
         # Initialize navigation manager
         self.nav = NavigationManager(self)
+        
+        # Clipboard for copy/paste operations
+        self._clipboard = None
         
         # Apply saved window geometry
         self._apply_window_geometry()
@@ -199,7 +202,7 @@ class KosFMApp:
         self.file_panel = FilePanel(
             self.paned_window,
             on_double_click_callback=self._on_file_double_click,
-            on_file_click_callback=self._on_file_click,
+            on_file_click_callback=None,  # No single-click opening
             on_context_menu_callback=self._on_context_menu
         )
         self.file_panel.add_to_paned_window(weight=1)
@@ -269,24 +272,26 @@ class KosFMApp:
         except OSError as e:
             self.file_panel.insert_item("", f"Error: {e}", "", "", "")
             self.status_bar.update(f"Error: {e}")
+                
+    def _open_file(self, path):
+        """Open file with default application."""
+        if not os.path.isfile(path):
+            return
             
-    def _on_file_click(self, path):
-        """Handle single click on file - open with default app."""
-        if os.path.isfile(path):
-            mime_type = get_mime_type(path)
-            saved_app = self.config.get("mime_apps", {}).get(mime_type)
-            
-            if saved_app:
-                desktop_path = self._find_desktop_file(saved_app)
-                if desktop_path:
-                    app_info = parse_desktop_file(desktop_path)
-                    if app_info:
-                        self.status_bar.update(f"Opening: {path}")
-                        launch_application(path, app_info)
-                        return
-            
-            self.status_bar.update(f"Opening: {path}")
-            open_file_with_default(path)
+        mime_type = get_mime_type(path)
+        saved_app = self.config.get("mime_apps", {}).get(mime_type)
+        
+        if saved_app:
+            desktop_path = self._find_desktop_file(saved_app)
+            if desktop_path:
+                app_info = parse_desktop_file(desktop_path)
+                if app_info:
+                    self.status_bar.update(f"Opening: {path}")
+                    launch_application(path, app_info)
+                    return
+        
+        self.status_bar.update(f"Opening: {path}")
+        open_file_with_default(path)
                 
     def _find_desktop_file(self, desktop_name):
         """Find .desktop file by name."""
@@ -303,20 +308,115 @@ class KosFMApp:
             
     def _on_context_menu(self, action, path):
         """Handle context menu actions."""
-        if not path:
+        if not path and action != "paste":
             return
             
         if action == "open":
-            self._on_file_click(path)
+            self._open_file(path)
         elif action == "open_with":
             dialog = OpenWithDialog(self.root, path, self.config_manager, 
                                    self.config, self.status_bar.update)
             dialog.show()
+        elif action == "copy":
+            self._on_context_copy(path)
+        elif action == "paste":
+            self._on_context_paste(path)
+        elif action == "rename":
+            self._on_context_rename(path)
+        elif action == "remove":
+            self._on_context_remove(path)
         elif action == "copy_path":
             self._copy_path_to_clipboard(path)
         elif action == "properties":
             dialog = PropertiesDialog(self.root, path)
             dialog.show()
+            
+    def _on_context_copy(self, path):
+        """Copy file/directory to clipboard."""
+        self._clipboard = path
+        self.status_bar.update(f"Copied: {os.path.basename(path)}")
+        
+    def _on_context_paste(self, dest_dir):
+        """Paste from clipboard to destination."""
+        if not self._clipboard:
+            self.status_bar.update("Nothing to paste")
+            return
+            
+        if not os.path.exists(self._clipboard):
+            self.status_bar.update("Source file no longer exists")
+            self._clipboard = None
+            return
+            
+        src_name = os.path.basename(self._clipboard)
+        dest_path = os.path.join(dest_dir, src_name)
+        
+        # If destination exists, add number suffix
+        if os.path.exists(dest_path):
+            base, ext = os.path.splitext(src_name)
+            counter = 1
+            while os.path.exists(dest_path):
+                new_name = f"{base} ({counter}){ext}"
+                dest_path = os.path.join(dest_dir, new_name)
+                counter += 1
+        
+        try:
+            if os.path.isdir(self._clipboard):
+                shutil.copytree(self._clipboard, dest_path)
+            else:
+                shutil.copy2(self._clipboard, dest_path)
+            self.status_bar.update(f"Pasted: {os.path.basename(dest_path)}")
+            self._refresh_file_view()
+        except Exception as e:
+            self._show_error(f"Could not paste: {e}")
+            
+    def _on_context_rename(self, path):
+        """Rename file or directory."""
+        if not path:
+            return
+            
+        old_name = os.path.basename(path)
+        new_name = simpledialog.askstring("Rename", f"Rename '{old_name}' to:", 
+                                          initialvalue=old_name)
+        if not new_name or new_name == old_name:
+            return
+            
+        new_path = os.path.join(os.path.dirname(path), new_name)
+        
+        if os.path.exists(new_path):
+            self._show_error(f"Cannot rename: '{new_name}' already exists")
+            return
+            
+        try:
+            os.rename(path, new_path)
+            self.status_bar.update(f"Renamed: {old_name} -> {new_name}")
+            self._refresh_file_view()
+        except Exception as e:
+            self._show_error(f"Could not rename: {e}")
+            
+    def _on_context_remove(self, path):
+        """Remove file or directory with confirmation."""
+        if not path:
+            return
+            
+        name = os.path.basename(path)
+        is_dir = os.path.isdir(path)
+        
+        item_type = "directory" if is_dir else "file"
+        response = messagebox.askyesno("Confirm Delete", 
+                                       f"Are you sure you want to delete {item_type} '{name}'?\n\n"
+                                       f"This action cannot be undone.")
+        if not response:
+            return
+            
+        try:
+            if is_dir:
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
+            self.status_bar.update(f"Deleted: {name}")
+            self._refresh_file_view()
+        except Exception as e:
+            self._show_error(f"Could not delete: {e}")
             
     def _copy_path_to_clipboard(self, path):
         """Copy file path to clipboard."""
@@ -351,7 +451,8 @@ class KosFMApp:
                 self.status_bar.update(f"Opening: {full_path}")
                 self.nav.navigate_to(full_path)
             else:
-                self._on_file_click(full_path)
+                # Open file on double-click
+                self._open_file(full_path)
         except Exception as e:
             self._show_error(f"Double-click error: {e}")
             

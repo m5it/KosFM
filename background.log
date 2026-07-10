@@ -857,3 +857,80 @@ Usage:
 [03:39:10] You: 
 [03:39:14] You: 
 [03:39:18] You: 
+[03:53:23] INFO: Session started, sess_id=319, mode=plan, model=kimi-k2.5:cloud
+[03:53:23] You: 
+[03:53:26] You: 
+[04:00:58] INFO: Session started, sess_id=320, mode=plan, model=kimi-k2.5:cloud
+[04:00:58] You: 
+[04:01:00] You: 
+[04:01:04] You: 
+[04:03:50] INFO: AI request (iteration 1, msgs=334)
+[04:03:55] INFO: AI response: 102889 prompt + 156 response tokens (total: 11950569 / 74580)
+[04:03:55] INFO: AI request (iteration 2, msgs=336)
+[04:04:00] INFO: AI response: 103012 prompt + 350 response tokens (total: 12053581 / 74930)
+[04:04:00] INFO: AI request (iteration 3, msgs=341)
+[04:04:04] INFO: AI response: 103468 prompt + 299 response tokens (total: 12157049 / 75229)
+[04:04:04] You: 
+[04:04:11] INFO: AI request (iteration 1, msgs=344)
+[04:04:15] INFO: AI response: 103798 prompt + 56 response tokens (total: 12260847 / 75285)
+[04:04:15] INFO: AI request (iteration 2, msgs=346)
+[04:04:22] INFO: AI response: 105854 prompt + 475 response tokens (total: 12366701 / 75760)
+[04:04:22] INFO: AI request (iteration 3, msgs=348)
+[04:04:28] INFO: AI response: 106293 prompt + 379 response tokens (total: 12472994 / 76139)
+[04:04:28] INFO: AI request (iteration 4, msgs=350)
+[04:04:46] INFO: AI response: 106720 prompt + 2403 response tokens (total: 12579714 / 78542)
+[04:04:46] INFO: AI request (iteration 5, msgs=352)
+[04:04:50] INFO: AI response: 109138 prompt + 60 response tokens (total: 12688852 / 78602)
+[04:04:50] INFO: AI request (iteration 6, msgs=354)
+[04:04:54] INFO: AI response: 109315 prompt + 62 response tokens (total: 12798167 / 78664)
+[04:04:54] INFO: AI request (iteration 7, msgs=356)
+[04:04:58] INFO: AI response: 109448 prompt + 220 response tokens (total: 12907615 / 78884)
+[04:04:58] INFO: AI request (iteration 8, msgs=358)
+[04:05:24] INFO: AI response: 109697 prompt + 3544 response tokens (total: 13017312 / 82428)
+[04:05:24] INFO: AI request (iteration 9, msgs=360)
+[04:05:28] INFO: AI response: 113247 prompt + 56 response tokens (total: 13130559 / 82484)
+[04:05:28] INFO: AI request (iteration 10, msgs=362)
+[04:05:31] INFO: AI response: 113320 prompt + 41 response tokens (total: 13243879 / 82525)
+[04:05:31] You: 
+[04:05:40] INFO: AI request (iteration 1, msgs=365)
+[04:05:45] INFO: AI response: 113495 prompt + 131 response tokens (total: 13357374 / 82656)
+[04:05:45] INFO: AI request (iteration 2, msgs=367)
+[04:05:49] INFO: AI response: 113612 prompt + 277 response tokens (total: 13470986 / 82933)
+[04:05:49] You: 
+[04:06:00] You: 
+[04:06:04] INFO: Koslenium server thread started
+[04:06:05] You: 
+[04:07:08] INFO: Session started, sess_id=321, mode=build, model=kimi-k2.5:cloud
+[04:07:08] You: 
+[04:07:10] You: 
+[04:07:13] You: 
+[04:07:17] You: 
+[04:07:21] You: 
+[04:09:16] INFO: AI request (iteration 1, msgs=370)
+[04:09:28] <ReplaceLine
+[Aborted: 'ReplaceLine' cannot be used in PLAN mode]
+[04:09:28] Stream aborted: 'ReplaceLine' cannot be used in PLAN mode
+[04:09:28] INFO: AI response: 0 prompt + 0 response tokens (total: 13470986 / 82933)
+[04:09:28] You: 
+[04:09:35] You: 
+[04:09:40] INFO: AI request (iteration 1, msgs=373)
+[04:09:45] INFO: AI response: 114003 prompt + 299 response tokens (total: 13584989 / 83232)
+[04:09:45] INFO: AI request (iteration 2, msgs=375)
+[04:09:50] INFO: AI response: 114278 prompt + 193 response tokens (total: 13699267 / 83425)
+[04:09:50] INFO: AI request (iteration 3, msgs=377)
+[04:10:00] INFO: AI response: 114347 prompt + 676 response tokens (total: 13813614 / 84101)
+[04:10:00] INFO: AI request (iteration 4, msgs=379)
+[04:10:06] INFO: AI response: 114837 prompt + 351 response tokens (total: 13928451 / 84452)
+[04:10:06] INFO: AI request (iteration 5, msgs=381)
+[04:10:38] INFO: AI response: 115242 prompt + 3537 response tokens (total: 14043693 / 87989)
+[04:10:38] INFO: AI request (iteration 6, msgs=383)
+[04:10:42] INFO: AI response: 118789 prompt + 116 response tokens (total: 14162482 / 88105)
+[04:10:42] INFO: AI request (iteration 7, msgs=385)
+[04:10:45] INFO: AI response: 118948 prompt + 52 response tokens (total: 14281430 / 88157)
+[04:10:45] INFO: AI request (iteration 8, msgs=387)
+[04:11:17] INFO: AI response: 119037 prompt + 3543 response tokens (total: 14400467 / 91700)
+[04:11:17] INFO: AI request (iteration 9, msgs=389)
+[04:11:24] INFO: AI response: 122594 prompt + 178 response tokens (total: 14523061 / 91878)
+[04:11:24] INFO: AI request (iteration 10, msgs=391)
+[04:11:32] INFO: AI response: 122667 prompt + 284 response tokens (total: 14645728 / 92162)
+[04:11:32] You: 

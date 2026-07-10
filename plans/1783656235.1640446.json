@@ -1,0 +1,46 @@
+{
+  "id": "1783656235.1640446",
+  "title": "Context menu improvements and file operations",
+  "instructions": "Implement two features:\n1. Fix context menu to close when clicking outside of it (on the window or elsewhere)\n2. Add new file operation options to the context menu: Remove file, Remove directory, Rename file/dir, Copy, Paste\n\nThese require modifications to the file_panel.py for the menu behavior and app.py for the file operations logic.",
+  "startTimestamp": 1783656235.1640463,
+  "endTimestamp": 1783656433.274112,
+  "tasks": {
+    "1783656240.547189": {
+      "id": "1783656240.547189",
+      "status": "completed",
+      "instruction": "Modify file_panel.py to make the context menu close when clicking outside of it. This typically involves:\n1. Binding <FocusOut> event to the menu\n2. Or binding <Button-1> to the parent widget to destroy/withdraw the menu\n3. Ensuring the menu doesn't stay open when user clicks elsewhere in the application",
+      "startTimestamp": 1783656251.7637436,
+      "endTimestamp": null,
+      "log": [
+        {
+          "timestamp": 1783656428.2145848,
+          "text": "Build started"
+        }
+      ]
+    },
+    "1783656240.547367": {
+      "id": "1783656240.547367",
+      "status": "completed",
+      "instruction": "Extend the context menu in file_panel.py to include new options:\n- Remove file\n- Remove directory  \n- Rename file/dir\n- Copy\n- Paste\n\nUpdate the _create_context_menu method to add these new menu items with appropriate separators.",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    },
+    "1783656240.5853982": {
+      "id": "1783656240.5853982",
+      "status": "completed",
+      "instruction": "Add handler methods in app.py for the new context menu actions:\n1. _on_context_remove(path) - Delete file or directory with confirmation\n2. _on_context_rename(path) - Rename file/dir with dialog\n3. _on_context_copy(path) - Copy file/dir to clipboard/memory\n4. _on_context_paste() - Paste from clipboard to current directory\n5. Track copied file in memory for paste operation",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    },
+    "1783656240.5855157": {
+      "id": "1783656240.5855157",
+      "status": "completed",
+      "instruction": "Update _on_context_menu in app.py to handle the new action types ('remove', 'rename', 'copy', 'paste') and route them to the appropriate handler methods.",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    }
+  }
+}

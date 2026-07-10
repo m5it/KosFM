@@ -1,27 +1,27 @@
-# Plan: Refactor KosFM/app.py into smaller modules
-## ID: 1783654604.9569938
-## Created: 2026-07-10 03:36:44
+# Plan: Context menu improvements and file operations
+## ID: 1783656235.1640446
+## Created: 2026-07-10 04:03:55
 ## Status: in_progress
 
 ### Goal:
-Split the large app.py file into smaller, focused modules:
-1. Create dialogs.py for dialog handlers (Open With, Properties)
-2. Create navigation.py for navigation functions
-3. Keep app.py as the main controller but thinner
-4. Ensure all imports and references are updated correctly
+Implement two features:
+1. Fix context menu to close when clicking outside of it (on the window or elsewhere)
+2. Add new file operation options to the context menu: Remove file, Remove directory, Rename file/dir, Copy, Paste
+
+These require modifications to the file_panel.py for the menu behavior and app.py for the file operations logic.
 
 ### Tasks (4):
-1. [pending] Create KosFM/dialogs.py module
-   ID: 1783654610.18979
+1. [pending] Fix context menu to close when clicking outside
+   ID: 1783656240.547189
 
-2. [pending] Create KosFM/navigation.py module
-   ID: 1783654610.1901152
+2. [pending] Add new context menu options
+   ID: 1783656240.547367
 
-3. [pending] Refactor KosFM/app.py to use new modules
-   ID: 1783654610.1904817
+3. [pending] Implement file operation handlers in app.py
+   ID: 1783656240.5853982
 
-4. [pending] Update KosFM/__init__.py if needed
-   ID: 1783654610.1905978
+4. [pending] Update context menu callback routing
+   ID: 1783656240.5855157
 
 ---
 

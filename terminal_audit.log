@@ -11,3 +11,5 @@
 [2026-07-10 04:09:50] CMD: python3 -m py_compile KosFM/ui/file_panel.py | SUCCESS: True | OUTPUT_LEN: 0
 [2026-07-10 04:10:45] CMD: python3 -m py_compile KosFM/app.py KosFM/ui/file_panel.py | SUCCESS: True | OUTPUT_LEN: 69
 [2026-07-10 04:11:24] CMD: python3 -m py_compile KosFM/app.py KosFM/ui/file_panel.py | SUCCESS: True | OUTPUT_LEN: 0
+[2026-07-10 04:23:46] CMD: python3 -m py_compile KosFM/ui/menu_bar.py | SUCCESS: True | OUTPUT_LEN: 146
+[2026-07-10 04:24:05] CMD: python3 -m py_compile KosFM/ui/menu_bar.py | SUCCESS: True | OUTPUT_LEN: 0

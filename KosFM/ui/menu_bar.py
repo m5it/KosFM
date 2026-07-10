@@ -1,3 +1,4 @@
+
 """
 Menu bar widget for KosFM.
 Creates File, View, and Help menus.
@@ -113,10 +114,10 @@ Double-click    Open folder
 Enter           Navigate to path (in path bar)
 
 Menu:
-File → Refresh      Reload directory
-File → Exit         Close application
-View → Show Hidden Files    Toggle hidden files
-View → Show Status Bar      Toggle status bar
+File -> Refresh      Reload directory
+File -> Exit         Close application
+View -> Show Hidden Files    Toggle hidden files
+View -> Show Status Bar      Toggle status bar
 """
         messagebox.showinfo("Keyboard Shortcuts", shortcuts)
         
@@ -126,18 +127,23 @@ View → Show Status Bar      Toggle status bar
         
         about_text = f"""{APP_NAME}
 
-Version: 1.1.0
-A simple file manager with tree view and file listing.
-
-Built with Python and tkinter.
+Version: 1.4.0
+A simple, cross-platform file manager built with Python and tkinter.
 
 Features:
-• Dual-pane interface
-• Lazy loading directory tree
-• File details (size, date, type)
-• Cross-platform support
+- Dual-pane interface with resizable panels
+- File operations (Copy, Paste, Rename, Remove)
+- Linux xdg-mime integration for file associations
+- "Open With" dialog with application selection
+- Context menu with file operations
+- Lazy loading directory tree
+- File details (size, date, type)
+- Panel width persistence
+- Cross-platform support (Linux, Windows, macOS)
+
+For more information, see README.md
 """
-        messagebox.showinfo("About", about_text)
+        messagebox.showinfo(f"About {APP_NAME}", about_text)
         
     def get_show_hidden_var(self):
         """Get Show Hidden Files variable."""

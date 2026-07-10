@@ -1,0 +1,38 @@
+{
+  "id": "1783657311.7694669",
+  "title": "Update documentation and About dialog",
+  "instructions": "Update project documentation and the About dialog:\n1. Update README.md with latest features (file operations, context menu improvements, panel width saving)\n2. Update CHANGELOG.md with recent changes\n3. Update the Help -> About dialog text to reflect current version and features",
+  "startTimestamp": 1783657311.7694688,
+  "endTimestamp": 1783657506.642182,
+  "tasks": {
+    "1783657317.0963361": {
+      "id": "1783657317.0963361",
+      "status": "completed",
+      "instruction": "Update README.md to include:\n- File operations (Copy, Paste, Rename, Remove)\n- Context menu improvements (closes when clicking outside)\n- Panel width saving on resize\n- Updated features list and screenshots description",
+      "startTimestamp": 1783657328.52876,
+      "endTimestamp": null,
+      "log": [
+        {
+          "timestamp": 1783657328.5288556,
+          "text": "Build started"
+        }
+      ]
+    },
+    "1783657317.0965064": {
+      "id": "1783657317.0965064",
+      "status": "completed",
+      "instruction": "Add new version entry to CHANGELOG.md with:\n- File operations (Copy, Paste, Rename, Remove)\n- Context menu auto-close fix\n- Panel width persistence\n- Code refactoring (dialogs.py, navigation.py)",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    },
+    "1783657317.1350155": {
+      "id": "1783657317.1350155",
+      "status": "completed",
+      "instruction": "Update the About dialog in app.py or menu_bar.py to show current version (1.4.0) and updated description of features. Make it more informative and professional.",
+      "startTimestamp": null,
+      "endTimestamp": null,
+      "log": []
+    }
+  }
+}

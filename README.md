@@ -11,8 +11,11 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 
 - **Dual-Pane Interface**: Resizable directory tree on the left, file listing on the right
 - **Linux Desktop Integration**: Full xdg-mime support for file associations
-- **File Opening**: Single-click to open files with default application
-- **Open With**: Right-click menu to choose application and set defaults
+- **File Operations**: Copy, Paste, Rename, and Remove files/directories
+- **Context Menu**: Right-click menu with Open, Open With, Copy, Paste, Rename, Remove, Copy Path, Properties
+- **Panel Width Persistence**: Panel sizes are saved and restored between sessions
+- **File Opening**: Double-click to open files with default application
+- **Open With**: Choose from available applications and set defaults
 - **Application Detection**: Automatically finds all apps that can handle a file type
 - **Saved Preferences**: Remembers your "Open With" choices between sessions
 - **Lazy Loading**: Directories load on-demand for better performance
@@ -48,11 +51,22 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 └──────────────────┴────────────────────────────────────┘
 ```
 
+## File Operations
+
+KosFM now includes full file operation support:
+
+- **Copy** - Copy file/directory to clipboard
+- **Paste** - Paste into current directory (auto-handles duplicates with suffix)
+- **Rename** - Rename files and directories with dialog
+- **Remove** - Delete files and directories with confirmation
+
+All operations include proper error handling and user confirmation for destructive actions.
+
 ## File Opening (Linux)
 
 KosFM integrates with your Linux desktop environment using `xdg-mime`:
 
-- **Single-click** any file to open with its default application
+- **Double-click** any file to open with its default application
 - **Right-click** → "Open With..." to choose from available applications
 - **Set as default** checkbox to make an app the default for that file type
 - **Saved preferences** persist between sessions in `config.json`
@@ -68,15 +82,18 @@ Supported features:
 
 ```
 KosFM/
-├── main.py                 # Entry point (27 lines)
+├── main.py                 # Entry point
+├── install.py              # Installation script
 ├── KosFM/                  # Main package
 │   ├── __init__.py
 │   ├── config.py           # Constants and settings
 │   ├── app.py              # Main application controller
+│   ├── dialogs.py          # Dialog handlers (Open With, Properties)
+│   ├── navigation.py       # Navigation logic
 │   ├── ui/                 # UI components
 │   │   ├── __init__.py
 │   │   ├── tree_panel.py   # Directory tree widget
-│   │   ├── file_panel.py   # File listing widget (with context menu)
+│   │   ├── file_panel.py   # File listing widget
 │   │   ├── menu_bar.py     # Menu bar
 │   │   └── status_bar.py   # Status bar
 │   └── utils/              # Utility modules
@@ -85,7 +102,7 @@ KosFM/
 │       ├── error_handler.py  # Error handling
 │       ├── file_utils.py     # File formatting
 │       ├── platform_utils.py # Platform-specific code
-│       └── xdg_mime.py       # Linux MIME type handling (NEW!)
+│       └── xdg_mime.py       # Linux MIME type handling
 ├── README.md               # This file
 └── CHANGELOG.md            # Version history
 ```
@@ -98,13 +115,22 @@ KosFM/
 ## Installation
 
 1. Clone or download this repository
-2. No additional dependencies required!
+2. Run the installer:
+   ```bash
+   ./install.py --install
+   ```
+3. Or run directly:
+   ```bash
+   python main.py
+   ```
 
 ## Usage
 
 Run the file manager:
 
 ```bash
+kosfm
+# or
 python main.py
 ```
 
@@ -114,10 +140,24 @@ python main.py
 |--------|-------------|
 | Click folder in tree | View contents in right panel |
 | Double-click folder | Navigate into folder |
+| Double-click file | Open file with default application |
 | Click "Up" button | Go to parent directory |
 | Type path + Enter | Navigate to specific path |
 | Click "Refresh" | Reload current directory |
-| Drag divider | Resize left/right panels |
+| Drag divider | Resize left/right panels (size is saved) |
+
+### Context Menu (Right-Click)
+
+| Option | Description |
+|--------|-------------|
+| Open | Open file with default application |
+| Open With... | Choose application to open file |
+| Copy | Copy file/directory to clipboard |
+| Paste | Paste from clipboard to current directory |
+| Rename | Rename file or directory |
+| Remove | Delete file or directory (with confirmation) |
+| Copy Path | Copy full path to clipboard |
+| Properties | Show file details |
 
 ### Keyboard Shortcuts
 
@@ -150,15 +190,15 @@ python main.py
 
 Configuration is automatically saved to `~/.config/KosFM/config.json` and includes:
 - Window position and size
-- Panel divider position
+- Panel divider position (saved automatically when resized)
 - View options (show hidden files, show status bar)
-- **MIME type application preferences** (saved "Open With" choices)
+- MIME type application preferences (saved "Open With" choices)
 
 ## Platform Support
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| Linux | ✅ Supported | Full xdg-mime integration |
+| Linux | ✅ Supported | Full xdg-mime integration, file operations |
 | Windows | ✅ Supported | Shows all drives (C:\, D:\, etc.) |
 | macOS | ✅ Supported | Shows / and /Users |
 
@@ -167,7 +207,9 @@ Configuration is automatically saved to `~/.config/KosFM/config.json` and includ
 The application is organized into focused modules:
 
 - **main.py**: Minimal entry point
-- **KosFM/app.py**: Main application controller that wires components together
+- **KosFM/app.py**: Main application controller
+- **KosFM/dialogs.py**: Dialog handlers (Open With, Properties)
+- **KosFM/navigation.py**: Navigation logic
 - **KosFM/ui/**: Self-contained UI widgets
 - **KosFM/utils/**: Reusable utility functions
 - **KosFM/config.py**: Centralized constants
@@ -176,7 +218,6 @@ This structure makes the code easy to maintain, test, and extend.
 
 ## Future Enhancements
 
-- [ ] File operations (copy, move, delete, rename)
 - [ ] File preview panel
 - [ ] Search functionality
 - [ ] Bookmarks/favorites
@@ -201,4 +242,4 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 
 ---
 
-**Current Version: 1.3.0** - Now with Linux xdg-mime integration for proper file associations!
+**Current Version: 1.4.0** - Now with file operations (Copy, Paste, Rename, Remove) and panel width persistence!

@@ -6,6 +6,36 @@ All notable changes to KosFM will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-07-09
+
+### Added
+- **File Operations**: Full file management support
+  - **Copy**: Copy files/directories to clipboard
+  - **Paste**: Paste into current directory with auto-renaming for duplicates
+  - **Rename**: Rename files and directories with dialog
+  - **Remove**: Delete files and directories with confirmation dialog
+- **Panel Width Persistence**: Panel divider position is now saved automatically
+  - Saves when you stop dragging the divider (500ms debounce)
+  - Restores position on application startup
+  - Also saves on window close as backup
+- **Context Menu Improvements**: Menu now closes when clicking outside of it
+  - Added `<FocusOut>` binding to auto-close menu
+  - Clicking on tree view closes any open menu
+
+### Changed
+- **Code Refactoring**: Split large app.py into focused modules
+  - New `dialogs.py` module for OpenWithDialog and PropertiesDialog
+  - New `navigation.py` module for NavigationManager
+  - `app.py` is now a thinner controller (~400 lines vs ~600)
+- **File Opening**: Changed from single-click to double-click
+  - Single-click now just selects the file
+  - Double-click opens files or navigates into folders
+  - Prevents accidental file opening
+
+### Fixed
+- Context menu staying open when clicking elsewhere
+- Panel width not persisting between sessions properly
+
 ## [1.3.0] - 2026-07-09
 
 ### Added
@@ -115,8 +145,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned Features
-- File operations (copy, move, delete, rename)
-- Context menu on right-click
 - File preview panel for images and text
 - Search functionality across directories
 - Bookmarks and favorites
@@ -129,6 +157,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## Version History
+
+### v1.4.0 (2026-07-09)
+- ✨ **File Operations**: Copy, Paste, Rename, Remove
+- ✨ **Panel Width Persistence**: Auto-save on resize
+- ✨ **Context Menu**: Auto-close when clicking outside
+- 📦 **Code Refactoring**: dialogs.py, navigation.py modules
+- 🐛 **Fixed**: Single-click opening changed to double-click
 
 ### v1.3.0 (2026-07-09)
 - ✨ **Linux xdg-mime Integration**: Full desktop file association support

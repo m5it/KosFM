@@ -192,6 +192,10 @@ View -> Show Hidden Files    Toggle hidden files
 View -> Show Status Bar      Toggle status bar
 View -> Show Preview Panel   Toggle file preview pane
 View -> Toggle Dark Theme    Switch between light and dark themes
+
+Archives:
+Right-click archive -> Extract Archive   Extract to current directory
+Right-click selection -> Create Archive...   Create .zip/.tar archive
 """
         messagebox.showinfo("Keyboard Shortcuts", shortcuts)
         

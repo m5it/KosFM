@@ -26,6 +26,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **Column Sorting**: Click headers to sort by Name, Size, Modified, Type
 - **Dark Theme**: Toggle between light and dark themes from the View menu
 - **Preview Panel**: Resizable pane showing file info and text previews
+- **Archive Handling**: Extract / create ZIP and TAR archives
 - **Navigation**:
   - Click directories in tree to view contents
   - Double-click folders to navigate into them
@@ -170,6 +171,8 @@ python main.py
 | Remove | Delete selected item(s) with confirmation |
 | Copy Path | Copy full path to clipboard (single selection) |
 | Properties | Show file details (single selection) |
+| Extract Archive | Extract selected archive to current directory (single selection) |
+| Create Archive... | Create .zip/.tar archive from selected items |
 
 ### Keyboard Shortcuts
 

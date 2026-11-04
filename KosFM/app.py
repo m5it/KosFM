@@ -19,6 +19,7 @@ from .utils.config_manager import ConfigManager
 from .utils.error_handler import handle_error
 from .utils.file_utils import format_size, format_time, get_file_type
 from .utils.platform_utils import get_root_directories
+from .utils.archive_handler import ARCHIVE_EXTENSIONS, create_archive, extract_archive
 from .utils.search import walk_search
 from .utils.theme import ThemeManager
 from .utils.xdg_mime import (
@@ -745,6 +746,10 @@ class KosFMApp:
             self._on_new_file(path)
         elif action == "go_to_parent":
             self.nav.go_to_parent()
+        elif action == "extract_archive":
+            self._on_context_extract_archive(path)
+        elif action == "create_archive":
+            self._on_context_create_archive(path)
 
     def _on_context_copy(self, path):
         """Copy file/directory or multi-selection to clipboard."""
@@ -899,6 +904,58 @@ class KosFMApp:
         except Exception as e:
             self._show_error(f"Could not rename: {e}")
             
+    def _on_context_extract_archive(self, path):
+        """Extract selected archive into current directory."""
+        if not path or not os.path.isfile(path):
+            self.status_bar.update("No archive selected")
+            return
+        dest_dir = self.current_path
+        if not dest_dir:
+            self.status_bar.update("No destination directory")
+            return
+        try:
+            extract_archive(path, dest_dir)
+            self.status_bar.update(f"Extracted: {os.path.basename(path)}")
+            self._refresh_file_view()
+        except Exception as e:
+            self._show_error(f"Could not extract archive: {e}")
+
+    def _on_context_create_archive(self, paths):
+        """Create an archive from selected items in the current directory."""
+        if not paths:
+            self.status_bar.update("Nothing selected")
+            return
+        dest_dir = self.current_path
+        if not dest_dir:
+            self.status_bar.update("No destination directory")
+            return
+
+        # Default archive name
+        if len(paths) == 1:
+            base = os.path.basename(paths[0])
+            default_name = f"{base}.zip"
+        else:
+            default_name = "archive.zip"
+
+        name = simpledialog.askstring("Create Archive", "Archive name:", initialvalue=default_name)
+        if not name:
+            return
+        name = name.replace(os.sep, "_").replace("/", "_").strip()
+        if not name:
+            self._show_error("Invalid archive name")
+            return
+
+        if not any(name.lower().endswith(ext) for ext in ARCHIVE_EXTENSIONS):
+            name += ".zip"
+
+        dest_path = self._unique_dest_path(dest_dir, name)
+        try:
+            create_archive(paths, dest_path)
+            self.status_bar.update(f"Created archive: {os.path.basename(dest_path)}")
+            self._refresh_file_view()
+        except Exception as e:
+            self._show_error(f"Could not create archive: {e}")
+
     def _on_context_remove(self, path):
         """Remove selected item(s) with confirmation."""
         selected = self.file_panel.tree.selection()

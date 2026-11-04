@@ -2,9 +2,19 @@
 File utility functions for KosFM.
 """
 
+import os
 from datetime import datetime
 
 from ..config import SIZE_UNITS
+
+
+def is_archive(path):
+    """Check whether a path is a supported archive file."""
+    from .archive_handler import ARCHIVE_EXTENSIONS
+    if not os.path.isfile(path):
+        return False
+    name_lower = path.lower()
+    return any(name_lower.endswith(ext) for ext in ARCHIVE_EXTENSIONS)
 
 
 def format_size(size):
@@ -28,6 +38,8 @@ def get_file_type(entry):
         return "Folder"
     else:
         name = entry.name
+        if is_archive(entry.path if hasattr(entry, 'path') else name):
+            return "Archive"
         if '.' in name:
             ext = name.rsplit('.', 1)[-1].upper()
             return f"{ext} File"

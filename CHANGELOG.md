@@ -192,6 +192,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Binary files show “no text preview” message
   - Togglable via View → Show Preview Panel
   - Visibility and height persisted in config.json
+- **Archive Handling**
+  - Extract ZIP and TAR archives to current directory via context menu
+  - Create .zip/.tar/.tar.gz/.tar.bz2/.tar.xz archives from selection
+  - Archive files shown with "Archive" file type
 
 ### Planned Features
 - File preview panel for images and text

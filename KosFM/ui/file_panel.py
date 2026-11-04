@@ -399,6 +399,8 @@ class FilePanel:
         self.context_menu.add_separator()
         self.context_menu.add_command(label="Remove", command=self._on_context_remove)
         self.context_menu.add_separator()
+        self.context_menu.add_command(label="Extract Archive", command=self._on_context_extract_archive)
+        self.context_menu.add_command(label="Create Archive...", command=self._on_context_create_archive)
 
     def _on_single_click(self, event):
         """Handle single click with Ctrl/Shift multi-select support."""
@@ -547,6 +549,20 @@ class FilePanel:
         selected = self.tree.selection()
         if self.on_context_menu and len(selected) == 1:
             self.on_context_menu("properties", self._get_selected_item_path())
+
+    def _on_context_extract_archive(self):
+        """Context menu: Extract selected archive to current directory."""
+        selected = self.tree.selection()
+        if self.on_context_menu and len(selected) == 1:
+            self.on_context_menu("extract_archive", self._get_selected_item_path())
+
+    def _on_context_create_archive(self):
+        """Context menu: Create archive from selected items."""
+        selected = self.tree.selection()
+        if self.on_context_menu and selected:
+            paths = self.get_selected_item_paths()
+            if paths:
+                self.on_context_menu("create_archive", paths)
             
     def get_selected_item_paths(self):
         """Get paths of all selected items (supporting multi-select)."""

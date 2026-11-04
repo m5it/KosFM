@@ -68,6 +68,9 @@ class KosFMApp:
         self._sort_column = "name"
         self._sort_reverse = False
         self._theme = self.config.get("theme", "light")
+        self._show_preview = self.config.get("view", {}).get("show_preview_panel", True)
+        self._preview_height = self.config.get("panel", {}).get("preview_height", 120)
+        self._preview_sash_save_timer = None
 
         # Search state
         self._cached_entries = []  # last scandir entries for filtering
@@ -111,6 +114,10 @@ class KosFMApp:
             self.root.after_cancel(self._right_sash_save_timer)
             self._right_sash_save_timer = None
             self._save_right_sash_position()
+        if self._preview_sash_save_timer:
+            self.root.after_cancel(self._preview_sash_save_timer)
+            self._preview_sash_save_timer = None
+            self._save_preview_sash_position()
 
         self._save_window_state()
         self.root.destroy()
@@ -144,12 +151,16 @@ class KosFMApp:
                     if "panel" not in self.config:
                         self.config["panel"] = {}
                     self.config["panel"]["right_top_height"] = right_sash
+                preview_sash = self.file_panel.get_preview_height()
+                if preview_sash is not None:
+                    self.config["panel"]["preview_height"] = preview_sash
             except:
                 pass
 
         self.config["view"]["show_hidden_files"] = self.menu_bar.get_show_hidden_var().get()
         self.config["view"]["show_status_bar"] = self.menu_bar.get_show_status_var().get()
-        
+        self.config["view"]["show_preview_panel"] = self.menu_bar.get_show_preview_var().get()
+
         self.config_manager.save_config(self.config)
         
     def _bind_sash_save(self):
@@ -311,6 +322,7 @@ class KosFMApp:
             'exit': self.root.destroy,
             'toggle_hidden': self._toggle_hidden_files,
             'toggle_status': self._toggle_status_bar,
+            'toggle_preview': self._toggle_preview_panel,
             'toggle_theme': self._toggle_theme,
             'focus_search': self._focus_search,
             'new_folder': self._on_new_folder,
@@ -320,6 +332,7 @@ class KosFMApp:
         self.menu_bar = MenuBar(self.root, handlers)
         self.menu_bar.get_show_hidden_var().set(self.config["view"]["show_hidden_files"])
         self.menu_bar.get_show_status_var().set(self.config["view"]["show_status_bar"])
+        self.menu_bar.get_show_preview_var().set(self._show_preview)
         # Ensure menu bar handlers dict matches actual methods (defensive)
         assert 'add_bookmark' in handlers
         
@@ -362,6 +375,12 @@ class KosFMApp:
         self.file_panel._sort_column = self._sort_column
         self.file_panel._sort_reverse = self._sort_reverse
         self.file_panel._update_sort_indicators()
+
+        # Wire preview panel
+        self.file_panel.bind_preview_sash_change(self._on_preview_sash_released)
+        self.file_panel.show_preview(self._show_preview)
+        if self._show_preview and self._preview_height:
+            self.root.after(200, lambda: self.file_panel.set_preview_height(self._preview_height))
         # Global keyboard shortcuts
         # Global keyboard shortcuts
         self.root.bind("<Control-n>", lambda e: self._on_new_file())
@@ -563,8 +582,14 @@ class KosFMApp:
             self.status_bar.update(f"{total} items ({dir_count} folders, {file_count} files) - {base}")
 
     def _update_status_for_selection(self):
-        """Update status bar to show selection count when items selected."""
+        """Update status bar and preview panel based on selection."""
         selected = self.file_panel.tree.selection()
+        if len(selected) == 1:
+            path = self._resolve_item_path(selected[0])
+            self._update_preview(path)
+            return
+
+        self._update_preview(None)
         if len(selected) <= 1:
             return
         total_size = 0
@@ -579,6 +604,16 @@ class KosFMApp:
                 except OSError:
                     pass
         self.status_bar.update(f"{len(selected)} items selected ({format_size(total_size)})")
+
+    def _update_preview(self, path):
+        """Update preview panel for the given path (or clear if None)."""
+        if not self._show_preview:
+            return
+        if hasattr(self.file_panel, 'preview_panel'):
+            if path:
+                self.file_panel.preview_panel.show_path(path)
+            else:
+                self.file_panel.preview_panel.clear()
 
     def _sort_entries(self, entries):
         """Sort entries according to current sort column and direction."""
@@ -935,7 +970,37 @@ class KosFMApp:
             self.status_bar.show()
         else:
             self.status_bar.hide()
-            
+
+    def _toggle_preview_panel(self):
+        """Toggle preview panel visibility."""
+        self._show_preview = self.menu_bar.get_show_preview_var().get()
+        self.file_panel.show_preview(self._show_preview)
+        if self._show_preview and self._preview_height:
+            self.root.after(100, lambda: self.file_panel.set_preview_height(self._preview_height))
+        self.config["view"]["show_preview_panel"] = self._show_preview
+        self.config_manager.save_config(self.config)
+
+    def _on_preview_sash_released(self, event=None):
+        """Handle preview panel sash release - save position after a delay."""
+        if self._preview_sash_save_timer:
+            self.root.after_cancel(self._preview_sash_save_timer)
+        self._preview_sash_save_timer = self.root.after(500, self._save_preview_sash_position)
+
+    def _save_preview_sash_position(self):
+        """Save the current preview pane height."""
+        try:
+            height = self.file_panel.get_preview_height()
+            if height is not None:
+                if "panel" not in self.config:
+                    self.config["panel"] = {}
+                self.config["panel"]["preview_height"] = height
+                self.config_manager.save_config(self.config)
+                logger.debug("Saved preview height: %s", height)
+        except Exception as e:
+            logger.debug("Could not save preview height: %s", e)
+        finally:
+            self._preview_sash_save_timer = None
+
     def _resolve_selected_path(self):
         """Resolve selected item to full filesystem path, handling search results."""
         item = self.file_panel.get_selection()

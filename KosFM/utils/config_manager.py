@@ -25,11 +25,13 @@ class ConfigManager:
             },
             "panel": {
                 "left_width": TREE_WIDTH,
-                "right_top_height": 70
+                "right_top_height": 70,
+                "preview_height": 120
             },
             "view": {
                 "show_hidden_files": False,
-                "show_status_bar": True
+                "show_status_bar": True,
+                "show_preview_panel": True
             },
             "mime_apps": {},
             "bookmarks": [],

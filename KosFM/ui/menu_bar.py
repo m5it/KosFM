@@ -22,6 +22,7 @@ class MenuBar:
                 - exit: Called for Exit
                 - toggle_hidden: Called for Show Hidden Files
                 - toggle_status: Called for Show Status Bar
+                - toggle_preview: Called for Show Preview Panel
                 - toggle_theme: Called for Toggle Dark Theme
                 - show_shortcuts: Called for Keyboard Shortcuts
                 - show_about: Called for About
@@ -114,6 +115,7 @@ class MenuBar:
         """Create View menu."""
         self.show_hidden_var = tk.BooleanVar(value=False)
         self.show_status_var = tk.BooleanVar(value=True)
+        self.show_preview_var = tk.BooleanVar(value=True)
 
         self.view_menu.add_checkbutton(
             label="Show Hidden Files",
@@ -127,6 +129,12 @@ class MenuBar:
             label="Show Status Bar",
             variable=self.show_status_var,
             command=self.handlers.get('toggle_status')
+        )
+
+        self.view_menu.add_checkbutton(
+            label="Show Preview Panel",
+            variable=self.show_preview_var,
+            command=self.handlers.get('toggle_preview')
         )
 
         self.view_menu.add_separator()
@@ -182,6 +190,7 @@ Edit -> Search / Filter    Focus search box
 Edit -> Add Bookmark       Bookmark current directory
 View -> Show Hidden Files    Toggle hidden files
 View -> Show Status Bar      Toggle status bar
+View -> Show Preview Panel   Toggle file preview pane
 View -> Toggle Dark Theme    Switch between light and dark themes
 """
         messagebox.showinfo("Keyboard Shortcuts", shortcuts)
@@ -220,3 +229,7 @@ For more information, see README.md
     def get_show_status_var(self):
         """Get Show Status Bar variable."""
         return self.show_status_var
+
+    def get_show_preview_var(self):
+        """Get Show Preview Panel variable."""
+        return self.show_preview_var

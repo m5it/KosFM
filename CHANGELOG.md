@@ -184,6 +184,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New View → Toggle Dark Theme menu item
   - Switches background, foreground, treeview, entry, button, and menu colors
   - Theme preference persisted in config.json
+- **Preview Panel**
+  - New resizable preview pane below the file list
+  - Shows file info, size, modified date, and type
+  - Text file preview with first 8 KB / 40 lines
+  - Directory preview with item count
+  - Binary files show “no text preview” message
+  - Togglable via View → Show Preview Panel
+  - Visibility and height persisted in config.json
 
 ### Planned Features
 - File preview panel for images and text

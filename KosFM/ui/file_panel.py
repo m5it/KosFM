@@ -9,6 +9,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from ..config import FILE_COLUMNS, PANEL_PADDING
+from .preview_panel import PreviewPanel
 
 
 class FilePanel:
@@ -53,8 +54,9 @@ class FilePanel:
         # Create search bar
         self._create_search_bar()
 
-        # Create file tree
+        # Create file tree and preview panel
         self._create_file_tree()
+        self._create_preview_panel()
 
         # Add top-controls frame and tree frame to the paned window
         self._add_panes()
@@ -92,12 +94,14 @@ class FilePanel:
         self.refresh_btn.grid(row=0, column=2, padx=(5, 0))
         
     def _create_file_tree(self):
-        """Create the file listing tree."""
-        tree_frame = ttk.Frame(self.tree_frame_container)
-        tree_frame.pack(fill="both", expand=True)
+        """Create the file listing tree inside a horizontal paned window."""
+        self.h_paned = ttk.PanedWindow(self.tree_frame_container, orient="vertical")
+        self.h_paned.pack(fill="both", expand=True)
+
+        tree_frame = ttk.Frame(self.h_paned)
         tree_frame.columnconfigure(0, weight=1)
         tree_frame.rowconfigure(0, weight=1)
-        
+
         self.tree = ttk.Treeview(
             tree_frame,
             columns=FILE_COLUMNS,
@@ -135,7 +139,9 @@ class FilePanel:
         self.tree.grid(row=0, column=0, sticky="nsew")
         self.v_scrollbar.grid(row=0, column=1, sticky="ns")
         self.h_scrollbar.grid(row=1, column=0, sticky="ew")
-        
+
+        self.h_paned.add(tree_frame, weight=1)
+
         # Bind events
         self.tree.bind("<Double-1>", self._on_double_click)
         self.tree.bind("<Button-1>", self._on_single_click)
@@ -165,6 +171,11 @@ class FilePanel:
         self.tree.bind("<BackSpace>", self._on_key_backspace)
         self.tree.bind("<Delete>", _key_nav_with_update(self._on_key_delete))
         self.tree.bind("<F2>", self._on_key_rename)
+
+    def _create_preview_panel(self):
+        """Create the preview panel below the file tree."""
+        self.preview_panel = PreviewPanel(self.h_paned)
+        self.h_paned.add(self.preview_panel.frame, weight=0)
 
     def _create_search_bar(self):
         """Create the search/filter bar."""
@@ -296,6 +307,10 @@ class FilePanel:
         """Bind a callback called when the vertical sash is released."""
         self.v_paned.bind("<ButtonRelease-1>", lambda e: callback())
 
+    def bind_preview_sash_change(self, callback):
+        """Bind a callback called when the preview horizontal sash is released."""
+        self.h_paned.bind("<ButtonRelease-1>", lambda e: callback())
+
     def _on_header_click(self, column):
         """Handle click on a column header to sort."""
         if self._sort_column == column:
@@ -328,6 +343,40 @@ class FilePanel:
                 self.context_menu.configure(bg=bg, fg=fg)
             except Exception:
                 pass
+        if hasattr(self, 'preview_panel'):
+            try:
+                self.preview_panel.set_theme_colors(bg, fg)
+            except Exception:
+                pass
+
+    def show_preview(self, show=True):
+        """Show or hide the preview panel."""
+        if not hasattr(self, 'preview_panel'):
+            return
+        try:
+            if show:
+                self.h_paned.add(self.preview_panel.frame, weight=0)
+            else:
+                self.h_paned.remove(self.preview_panel.frame)
+        except Exception:
+            pass
+
+    def set_preview_height(self, height):
+        """Set the preview pane height (horizontal sash position)."""
+        try:
+            if self.h_paned.winfo_exists():
+                self.h_paned.sashpos(0, height)
+        except Exception:
+            pass
+
+    def get_preview_height(self):
+        """Return current preview pane height."""
+        try:
+            if self.h_paned.winfo_exists():
+                return self.h_paned.sashpos(0)
+        except Exception:
+            pass
+        return None
 
     def focus_search(self):
         self.search_entry.focus_set()

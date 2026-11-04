@@ -202,6 +202,9 @@ View -> Show Preview Panel   Toggle file preview pane
 View -> Show Image Thumbnails    Show/hide image thumbnails in file list
 View -> Toggle Dark Theme    Switch between light and dark themes
 
+Preview Panel:
+Fit to panel checkbox   Scale image to fit preview pane
+
 Archives:
 Right-click archive -> Extract Archive   Extract to current directory
 Right-click selection -> Create Archive...   Create .zip/.tar archive

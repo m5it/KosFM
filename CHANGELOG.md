@@ -201,6 +201,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Graceful degradation when Pillow is not installed
   - View → Show Image Thumbnails toggle
   - Image preview in the preview panel for selected image files
+- **Improved Preview Panel**
+  - Photo preview scales to fit panel; checkbox toggles "Fit to panel" / actual size
+  - Preview resizes automatically when panel is resized
 
 ### Planned Features
 - File preview panel for images and text

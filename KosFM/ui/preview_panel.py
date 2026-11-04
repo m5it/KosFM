@@ -36,10 +36,25 @@ class PreviewPanel:
                                      font=("TkDefaultFont", 10, "bold"))
         self.title_label.grid(row=0, column=0, sticky="w", pady=(0, 4))
 
+        # Info row with resize checkbox on the right
+        self.info_frame = ttk.Frame(self.frame)
+        self.info_frame.grid(row=1, column=0, sticky="ew", pady=(0, 4))
+        self.info_frame.columnconfigure(0, weight=1)
+        self.info_frame.columnconfigure(1, weight=0)
+
         self.info_var = tk.StringVar(value="")
-        self.info_label = ttk.Label(self.frame, textvariable=self.info_var,
+        self.info_label = ttk.Label(self.info_frame, textvariable=self.info_var,
                                     wraplength=300, justify="left")
-        self.info_label.grid(row=1, column=0, sticky="nw", pady=(0, 4))
+        self.info_label.grid(row=0, column=0, sticky="nw")
+
+        self.fit_preview_var = tk.BooleanVar(value=True)
+        self.fit_preview_check = ttk.Checkbutton(
+            self.info_frame,
+            text="Fit to panel",
+            variable=self.fit_preview_var,
+            command=self._on_fit_toggle
+        )
+        self.fit_preview_check.grid(row=0, column=1, sticky="ne", padx=(6, 0))
 
         self.image_label = ttk.Label(self.frame)
         self.image_label.grid(row=2, column=0, sticky="nsew", pady=(0, 4))
@@ -55,10 +70,16 @@ class PreviewPanel:
         self.v_scrollbar.grid(row=3, column=1, sticky="ns")
         self.content_text.configure(yscrollcommand=self.v_scrollbar.set)
 
+        # Track parent size to recalculate fit
+        self._last_image_path = None
+        self._fit_mode = True
+        self.parent.bind("<Configure>", self._on_parent_configure)
+
     def clear(self):
         """Clear the preview panel."""
         self.title_var.set("Preview")
         self.info_var.set("No selection")
+        self._last_image_path = None
         self._hide_image()
         self._set_content("")
 
@@ -94,8 +115,28 @@ class PreviewPanel:
         self.info_var.set(f"{file_type}\n{size}\n{modified}")
 
         if is_image_file(path):
-            # Always try image preview via ThumbnailCache (it has tk fallback)
+            self._last_image_path = path
+            # Try Pillow-based scaled preview first, then tk fallback, then thumbnail cache
+            if not pillow_available():
+                if self._show_image_tk_fallback(path):
+                    return
+                # No tk fallback either
+                self._hide_image()
+                ext = os.path.splitext(path)[1].upper().lstrip(".") or "Image"
+                self._set_content(f"{ext} image — install Pillow for better preview\n{path}\n{size}")
+                return
             if self._show_image(path):
+                return
+            if self._thumbnail_cache is None:
+                from ..utils.thumbnail_cache import ThumbnailCache
+                self._thumbnail_cache = ThumbnailCache(size=(200, 200))
+            cached = self._thumbnail_cache.get_thumbnail(path)
+            if cached:
+                self._current_image = cached
+                self.image_label.configure(image=cached)
+                self.image_label.grid()
+                self.content_text.grid_remove()
+                self.v_scrollbar.grid_remove()
                 return
             # Fallback when no preview possible
             self._hide_image()
@@ -121,7 +162,10 @@ class PreviewPanel:
         if self._thumbnail_cache is None:
             from ..utils.thumbnail_cache import ThumbnailCache
             self._thumbnail_cache = ThumbnailCache(size=(200, 200))
-        photo = self._thumbnail_cache.get_thumbnail(path)
+        # Prefer original resolution scaled to preview frame
+        photo = self._load_scaled_image(path)
+        if photo is None:
+            photo = self._thumbnail_cache.get_thumbnail(path)
         if photo is None:
             return False
         self._current_image = photo
@@ -130,6 +174,48 @@ class PreviewPanel:
         self.content_text.grid_remove()
         self.v_scrollbar.grid_remove()
         return True
+
+    def _load_scaled_image(self, path):
+        """Load image scaled to fit within current preview frame (Pillow only)."""
+        if not pillow_available():
+            return None
+        try:
+            from PIL import Image, ImageTk
+            img = Image.open(path)
+            # Convert palette/CMYK safely
+            if img.mode not in ("RGB", "RGBA", "L"):
+                try:
+                    img = img.convert("RGBA")
+                except Exception:
+                    img = img.convert("RGB")
+            # Determine max size based on frame and fit mode
+            max_w = max(64, self.frame.winfo_width() - 10)
+            max_h = max(64, self.frame.winfo_height() - 80)
+            if not self._fit_mode:
+                # "Actual size" mode but still capped to avoid huge preview
+                max_w = max(64, min(800, img.width))
+                max_h = max(64, min(800, img.height))
+            img.thumbnail((max_w, max_h), Image.Resampling.LANCZOS)
+            return ImageTk.PhotoImage(img)
+        except Exception:
+            return None
+
+    def _on_fit_toggle(self):
+        """Handle Fit checkbox toggle."""
+        self._fit_mode = self.fit_preview_var.get()
+        if self._last_image_path:
+            self.show_path(self._last_image_path)
+
+    def _on_parent_configure(self, event=None):
+        """Re-scale current image when preview panel is resized."""
+        if self._last_image_path and self._current_image:
+            # Debounce: schedule resize after user stops dragging
+            if hasattr(self, '_resize_after_id'):
+                try:
+                    self.frame.after_cancel(self._resize_after_id)
+                except Exception:
+                    pass
+            self._resize_after_id = self.frame.after(150, lambda: self.show_path(self._last_image_path))
 
     def _hide_image(self):
         """Hide image preview and restore text widget."""
@@ -172,3 +258,18 @@ class PreviewPanel:
                                           selectforeground=bg)
         except Exception:
             pass
+
+    def _show_image_tk_fallback(self, path):
+        """Show image via tk.PhotoImage when Pillow is unavailable (PNG/GIF)."""
+        try:
+            if not path.lower().endswith((".png", ".gif")):
+                return False
+            photo = tk.PhotoImage(file=path)
+            self._current_image = photo
+            self.image_label.configure(image=photo)
+            self.image_label.grid()
+            self.content_text.grid_remove()
+            self.v_scrollbar.grid_remove()
+            return True
+        except Exception:
+            return False

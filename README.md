@@ -25,7 +25,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **Multi-Select**: Ctrl+Click / Shift+Click / Shift+Arrow for batch Copy, Paste, Remove
 - **Column Sorting**: Click headers to sort by Name, Size, Modified, Type
 - **Dark Theme**: Toggle between light and dark themes from the View menu
-- **Preview Panel**: Resizable pane showing file info, text previews, and image previews
+- **Preview Panel**: Resizable pane showing file info, text previews, and fit/actual-size image previews
 - **Archive Handling**: Extract / create ZIP and TAR archives
 - **Image Thumbnails**: Optional Pillow-based thumbnails in the file list
 - **Navigation**:
@@ -123,6 +123,7 @@ KosFM/
 
 - Python 3.6 or higher
 - tkinter (included with Python standard library)
+- Pillow (optional, installed automatically by `install.py` into a local venv for image thumbnails and previews)
 
 ## Installation
 

@@ -182,7 +182,25 @@ def install():
         print(f"Making main.py executable")
         current_mode = main_py.stat().st_mode
         main_py.chmod(current_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-    
+
+    # Ensure optional Pillow venv is ready
+    venv_dir = kosfm_dir / "venv"
+    venv_python = venv_dir / "bin" / "python"
+    if not venv_python.exists():
+        print("Creating virtual environment for optional Pillow dependency...")
+        import subprocess
+        try:
+            subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)
+        except Exception as e:
+            print(f"⚠ Could not create venv: {e}")
+        if venv_python.exists():
+            print("Installing optional Pillow dependency...")
+            try:
+                subprocess.run([str(venv_python), "-m", "pip", "install", "--quiet", "Pillow"], check=True)
+                print("✓ Pillow installed")
+            except Exception as e:
+                print(f"⚠ Could not install Pillow: {e}")
+
     # Create ~/.local/bin if needed
     if not LOCAL_BIN.exists():
         print(f"Creating directory: {LOCAL_BIN}")

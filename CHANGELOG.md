@@ -175,6 +175,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Batch Copy, Paste, and Remove across multiple selected items
   - Single-selection-only actions (Open, Open With, Rename, Properties, Copy Path) disabled for multi-selection
   - Status bar shows selected count and total size
+- **Column Sorting**
+  - Click any column header (Name, Size, Modified, Type) to sort
+  - Click again to toggle ascending/descending
+  - Visual ▲ / ▼ indicators in headers
+  - Sort preference persisted in config.json
 
 ### Planned Features
 - File preview panel for images and text

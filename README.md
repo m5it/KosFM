@@ -23,6 +23,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **Resizable Panels**: Drag the divider to adjust panel widths and the right-panel vertical sash to adjust top-controls height
 - **Keyboard Navigation**: Arrow keys, Enter, Backspace, F2, Delete, F5
 - **Multi-Select**: Ctrl+Click / Shift+Click / Shift+Arrow for batch Copy, Paste, Remove
+- **Column Sorting**: Click headers to sort by Name, Size, Modified, Type
 - **Navigation**:
   - Click directories in tree to view contents
   - Double-click folders to navigate into them
@@ -187,6 +188,7 @@ python main.py
 | Backspace | Go to parent directory |
 | F2 | Rename selected item |
 | Delete | Delete selected item(s) |
+| Click header | Sort by column (click again to reverse) |
 
 ## Menu Bar
 

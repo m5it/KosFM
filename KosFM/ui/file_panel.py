@@ -30,6 +30,7 @@ class FilePanel:
         self.on_file_click = on_file_click_callback
         self.on_context_menu = on_context_menu_callback
         self.on_selection_change = None
+        self._on_sort_change = None
 
         self._create_widget()
         self._create_context_menu()
@@ -104,12 +105,22 @@ class FilePanel:
             show="headings"
         )
         
+        # Sort state
+        self._sort_column = "name"
+        self._sort_reverse = False
+        self._sort_indicators = {}
+
         # Configure columns
-        self.tree.heading("name", text="Name", anchor="w")
-        self.tree.heading("size", text="Size", anchor="e")
-        self.tree.heading("modified", text="Modified", anchor="w")
-        self.tree.heading("type", text="Type", anchor="w")
-        
+        self._base_headings = {
+            "name": "Name",
+            "size": "Size",
+            "modified": "Modified",
+            "type": "Type",
+        }
+        for col in FILE_COLUMNS:
+            self.tree.heading(col, text=self._base_headings[col], anchor="w" if col in ("name", "modified", "type") else "e")
+            self.tree.heading(col, command=lambda c=col: self._on_header_click(c))
+
         self.tree.column("name", width=300, minwidth=150, stretch=True)
         self.tree.column("size", width=80, minwidth=60, stretch=False)
         self.tree.column("modified", width=150, minwidth=100, stretch=False)
@@ -284,6 +295,31 @@ class FilePanel:
     def bind_sash_change(self, callback):
         """Bind a callback called when the vertical sash is released."""
         self.v_paned.bind("<ButtonRelease-1>", lambda e: callback())
+
+    def _on_header_click(self, column):
+        """Handle click on a column header to sort."""
+        if self._sort_column == column:
+            self._sort_reverse = not self._sort_reverse
+        else:
+            self._sort_column = column
+            self._sort_reverse = False
+        self._update_sort_indicators()
+        if self._on_sort_change:
+            self._on_sort_change(self._sort_column, self._sort_reverse)
+
+    def _update_sort_indicators(self):
+        """Update header text with sort direction arrows."""
+        indicator = "▲" if not self._sort_reverse else "▼"
+        for col in FILE_COLUMNS:
+            base = self._base_headings[col]
+            if col == self._sort_column:
+                self.tree.heading(col, text=f"{indicator} {base}")
+            else:
+                self.tree.heading(col, text=base)
+
+    def set_sort_callbacks(self, callback):
+        """Register callback when sort column/direction changes."""
+        self._on_sort_change = callback
 
     def focus_search(self):
         self.search_entry.focus_set()

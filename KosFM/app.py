@@ -61,6 +61,8 @@ class KosFMApp:
         self.current_path = None
         self._sash_save_timer = None
         self._right_sash_save_timer = None
+        self._sort_column = "name"
+        self._sort_reverse = False
 
         # Search state
         self._cached_entries = []  # last scandir entries for filtering
@@ -174,6 +176,17 @@ class KosFMApp:
         if self._right_sash_save_timer:
             self.root.after_cancel(self._right_sash_save_timer)
         self._right_sash_save_timer = self.root.after(500, self._save_right_sash_position)
+
+    def _on_sort_changed(self, column, reverse):
+        """Handle sort column/direction change from file panel."""
+        self._sort_column = column
+        self._sort_reverse = reverse
+        if "sort" not in self.config:
+            self.config["sort"] = {}
+        self.config["sort"]["column"] = column
+        self.config["sort"]["reverse"] = reverse
+        self.config_manager.save_config(self.config)
+        self._render_entries(self._cached_entries, self._filter_query)
 
     def _save_right_sash_position(self):
         """Save the current file-panel vertical sash position."""
@@ -293,6 +306,15 @@ class KosFMApp:
         )
         self.file_panel.set_selection_change_callback(self._update_status_for_selection)
         self.file_panel.bind_sash_change(self._on_right_sash_released)
+        self.file_panel.set_sort_callbacks(self._on_sort_changed)
+
+        # Apply saved sort preferences
+        sort_cfg = self.config.get("sort", {})
+        self._sort_column = sort_cfg.get("column", "name")
+        self._sort_reverse = sort_cfg.get("reverse", False)
+        self.file_panel._sort_column = self._sort_column
+        self.file_panel._sort_reverse = self._sort_reverse
+        self.file_panel._update_sort_indicators()
         # Global keyboard shortcuts
         # Global keyboard shortcuts
         self.root.bind("<Control-n>", lambda e: self._on_new_file())
@@ -461,11 +483,11 @@ class KosFMApp:
         self._search_thread = None
 
     def _render_entries(self, entries, query=""):
-        """Render entries to file panel, applying optional name filter."""
+        """Render entries to file panel, applying optional name filter and sort."""
         self.file_panel.clear()
         if query:
             entries = [e for e in entries if query.lower() in e.name.lower()]
-        entries_sorted = sorted(entries, key=lambda e: (not e.is_dir(), e.name.lower()))
+        entries_sorted = self._sort_entries(entries)
         file_count = 0
         dir_count = 0
         for entry in entries_sorted:
@@ -510,6 +532,40 @@ class KosFMApp:
                 except OSError:
                     pass
         self.status_bar.update(f"{len(selected)} items selected ({format_size(total_size)})")
+
+    def _sort_entries(self, entries):
+        """Sort entries according to current sort column and direction."""
+        col = self._sort_column
+        reverse = self._sort_reverse
+
+        def _key(entry):
+            try:
+                stat = entry.stat(follow_symlinks=False)
+            except OSError:
+                stat = None
+
+            if col == "name":
+                # Folders first when sorting by name, then alphabetical
+                return (not entry.is_dir(), entry.name.lower())
+            elif col == "size":
+                size = stat.st_size if stat else 0
+                return size
+            elif col == "modified":
+                mtime = stat.st_mtime if stat else 0
+                return mtime
+            elif col == "type":
+                return get_file_type(entry).lower()
+            return entry.name.lower()
+
+        # For non-name columns, separate folders/files to keep folders first
+        if col != "name":
+            dirs = [e for e in entries if e.is_dir()]
+            files = [e for e in entries if not e.is_dir()]
+            dirs_sorted = sorted(dirs, key=_key, reverse=reverse)
+            files_sorted = sorted(files, key=_key, reverse=reverse)
+            return dirs_sorted + files_sorted
+
+        return sorted(entries, key=_key, reverse=reverse)
 
     @handle_error
     def _refresh_file_view(self):

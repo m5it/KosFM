@@ -32,7 +32,11 @@ class ConfigManager:
                 "show_status_bar": True
             },
             "mime_apps": {},
-            "bookmarks": []
+            "bookmarks": [],
+            "sort": {
+                "column": "name",
+                "reverse": False
+            }
         }
         
     def ensure_config_dir(self):

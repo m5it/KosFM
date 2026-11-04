@@ -72,6 +72,7 @@ class KosFMApp:
         self._show_preview = self.config.get("view", {}).get("show_preview_panel", True)
         self._preview_height = self.config.get("panel", {}).get("preview_height", 120)
         self._preview_sash_save_timer = None
+        self._show_thumbnails = self.config.get("thumbnails", {}).get("enabled", True)
 
         # Search state
         self._cached_entries = []  # last scandir entries for filtering
@@ -161,6 +162,9 @@ class KosFMApp:
         self.config["view"]["show_hidden_files"] = self.menu_bar.get_show_hidden_var().get()
         self.config["view"]["show_status_bar"] = self.menu_bar.get_show_status_var().get()
         self.config["view"]["show_preview_panel"] = self.menu_bar.get_show_preview_var().get()
+        if "thumbnails" not in self.config:
+            self.config["thumbnails"] = {}
+        self.config["thumbnails"]["enabled"] = self.menu_bar.get_show_thumbnails_var().get()
 
         self.config_manager.save_config(self.config)
         
@@ -324,6 +328,7 @@ class KosFMApp:
             'toggle_hidden': self._toggle_hidden_files,
             'toggle_status': self._toggle_status_bar,
             'toggle_preview': self._toggle_preview_panel,
+            'toggle_thumbnails': self._toggle_thumbnails,
             'toggle_theme': self._toggle_theme,
             'focus_search': self._focus_search,
             'new_folder': self._on_new_folder,
@@ -334,6 +339,7 @@ class KosFMApp:
         self.menu_bar.get_show_hidden_var().set(self.config["view"]["show_hidden_files"])
         self.menu_bar.get_show_status_var().set(self.config["view"]["show_status_bar"])
         self.menu_bar.get_show_preview_var().set(self._show_preview)
+        self.menu_bar.get_show_thumbnails_var().set(self._show_thumbnails)
         # Ensure menu bar handlers dict matches actual methods (defensive)
         assert 'add_bookmark' in handlers
         
@@ -377,11 +383,12 @@ class KosFMApp:
         self.file_panel._sort_reverse = self._sort_reverse
         self.file_panel._update_sort_indicators()
 
-        # Wire preview panel
+        # Wire preview panel and thumbnails
         self.file_panel.bind_preview_sash_change(self._on_preview_sash_released)
         self.file_panel.show_preview(self._show_preview)
         if self._show_preview and self._preview_height:
             self.root.after(200, lambda: self.file_panel.set_preview_height(self._preview_height))
+        self.file_panel.set_thumbnails_enabled(self._show_thumbnails)
         # Global keyboard shortcuts
         # Global keyboard shortcuts
         self.root.bind("<Control-n>", lambda e: self._on_new_file())
@@ -565,7 +572,10 @@ class KosFMApp:
                 size = format_size(stat.st_size) if not entry.is_dir() else ""
                 modified = format_time(stat.st_mtime)
                 file_type = get_file_type(entry)
-                self.file_panel.insert_item(name, display_name, size, modified, file_type)
+                thumbnail = None
+                if hasattr(entry, 'path') and not entry.is_dir():
+                    thumbnail = self.file_panel.get_thumbnail(entry.path)
+                self.file_panel.insert_item(name, display_name, size, modified, file_type, thumbnail)
                 if entry.is_dir():
                     dir_count += 1
                 else:
@@ -1036,6 +1046,17 @@ class KosFMApp:
             self.root.after(100, lambda: self.file_panel.set_preview_height(self._preview_height))
         self.config["view"]["show_preview_panel"] = self._show_preview
         self.config_manager.save_config(self.config)
+
+    def _toggle_thumbnails(self):
+        """Toggle image thumbnails in the file list."""
+        self._show_thumbnails = self.menu_bar.get_show_thumbnails_var().get()
+        self.file_panel.set_thumbnails_enabled(self._show_thumbnails)
+        if "thumbnails" not in self.config:
+            self.config["thumbnails"] = {}
+        self.config["thumbnails"]["enabled"] = self._show_thumbnails
+        self.config_manager.save_config(self.config)
+        self._refresh_file_view()
+        self.status_bar.update(f"Thumbnails: {'on' if self._show_thumbnails else 'off'}")
 
     def _on_preview_sash_released(self, event=None):
         """Handle preview panel sash release - save position after a delay."""

@@ -39,7 +39,10 @@ class ConfigManager:
                 "column": "name",
                 "reverse": False
             },
-            "theme": "light"
+            "theme": "light",
+            "thumbnails": {
+                "enabled": True
+            }
         }
         
     def ensure_config_dir(self):

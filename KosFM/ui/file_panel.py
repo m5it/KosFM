@@ -9,6 +9,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from ..config import FILE_COLUMNS, PANEL_PADDING
+from ..utils.thumbnail_cache import ThumbnailCache
 from .preview_panel import PreviewPanel
 
 
@@ -32,6 +33,8 @@ class FilePanel:
         self.on_context_menu = on_context_menu_callback
         self.on_selection_change = None
         self._on_sort_change = None
+        self._thumbnails_enabled = False
+        self._thumbnail_cache = None
 
         self._create_widget()
         self._create_context_menu()
@@ -129,7 +132,11 @@ class FilePanel:
         self.tree.column("size", width=80, minwidth=60, stretch=False)
         self.tree.column("modified", width=150, minwidth=100, stretch=False)
         self.tree.column("type", width=80, minwidth=60, stretch=False)
-        
+
+        # Image column for thumbnails (only visible when enabled)
+        self.tree.column("#0", width=0, minwidth=0, stretch=False)
+        self.tree.heading("#0", text="")
+
         # Scrollbars
         self.v_scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=self.tree.yview)
         self.h_scrollbar = ttk.Scrollbar(tree_frame, orient="horizontal", command=self.tree.xview)
@@ -382,6 +389,20 @@ class FilePanel:
         self.search_entry.focus_set()
         if self._search_has_placeholder:
             self._clear_search_placeholder()
+
+    def set_thumbnails_enabled(self, enabled):
+        """Enable or disable image thumbnails."""
+        self._thumbnails_enabled = bool(enabled)
+        if self._thumbnails_enabled and self._thumbnail_cache is None:
+            self._thumbnail_cache = ThumbnailCache()
+        if not self._thumbnails_enabled:
+            self._thumbnail_cache = None
+
+    def get_thumbnail(self, path):
+        """Return a cached thumbnail PhotoImage or None."""
+        if not self._thumbnails_enabled or self._thumbnail_cache is None:
+            return None
+        return self._thumbnail_cache.get_thumbnail(path)
 
     def _create_context_menu(self):
         """Create right-click context menu."""
@@ -701,18 +722,26 @@ class FilePanel:
         for item in self.tree.get_children():
             self.tree.delete(item)
             
-    def insert_item(self, name, display_name, size, modified, file_type):
+    def insert_item(self, name, display_name, size, modified, file_type, thumbnail=None):
         """
         Insert an item into the file tree.
-        
+
         Args:
             name: Internal name
             display_name: Display name with icon
             size: File size string
             modified: Modified date string
             file_type: File type description
+            thumbnail: Optional tk.PhotoImage thumbnail for image files
         """
-        self.tree.insert("", "end", text=name, values=(display_name, size, modified, file_type))
+        if self._thumbnails_enabled and thumbnail is not None:
+            # Show image in the icon column (#0) and keep full text in values[0]
+            self.tree.insert(
+                "", "end", text=name, image=thumbnail,
+                values=(display_name, size, modified, file_type)
+            )
+        else:
+            self.tree.insert("", "end", text=name, values=(display_name, size, modified, file_type))
         
     def get_selection(self):
         """Get currently selected item."""

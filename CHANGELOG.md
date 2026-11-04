@@ -196,6 +196,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Extract ZIP and TAR archives to current directory via context menu
   - Create .zip/.tar/.tar.gz/.tar.bz2/.tar.xz archives from selection
   - Archive files shown with "Archive" file type
+- **Image Thumbnails**
+  - Optional thumbnail icons for image files in the file list (requires Pillow)
+  - Graceful degradation when Pillow is not installed
+  - View → Show Image Thumbnails toggle
+  - Image preview in the preview panel for selected image files
 
 ### Planned Features
 - File preview panel for images and text

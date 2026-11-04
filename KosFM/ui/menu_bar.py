@@ -23,6 +23,7 @@ class MenuBar:
                 - toggle_hidden: Called for Show Hidden Files
                 - toggle_status: Called for Show Status Bar
                 - toggle_preview: Called for Show Preview Panel
+                - toggle_thumbnails: Called for Show Image Thumbnails
                 - toggle_theme: Called for Toggle Dark Theme
                 - show_shortcuts: Called for Keyboard Shortcuts
                 - show_about: Called for About
@@ -116,6 +117,7 @@ class MenuBar:
         self.show_hidden_var = tk.BooleanVar(value=False)
         self.show_status_var = tk.BooleanVar(value=True)
         self.show_preview_var = tk.BooleanVar(value=True)
+        self.show_thumbnails_var = tk.BooleanVar(value=True)
 
         self.view_menu.add_checkbutton(
             label="Show Hidden Files",
@@ -135,6 +137,12 @@ class MenuBar:
             label="Show Preview Panel",
             variable=self.show_preview_var,
             command=self.handlers.get('toggle_preview')
+        )
+
+        self.view_menu.add_checkbutton(
+            label="Show Image Thumbnails",
+            variable=self.show_thumbnails_var,
+            command=self.handlers.get('toggle_thumbnails')
         )
 
         self.view_menu.add_separator()
@@ -191,6 +199,7 @@ Edit -> Add Bookmark       Bookmark current directory
 View -> Show Hidden Files    Toggle hidden files
 View -> Show Status Bar      Toggle status bar
 View -> Show Preview Panel   Toggle file preview pane
+View -> Show Image Thumbnails    Show/hide image thumbnails in file list
 View -> Toggle Dark Theme    Switch between light and dark themes
 
 Archives:
@@ -237,3 +246,7 @@ For more information, see README.md
     def get_show_preview_var(self):
         """Get Show Preview Panel variable."""
         return self.show_preview_var
+
+    def get_show_thumbnails_var(self):
+        """Get Show Image Thumbnails variable."""
+        return self.show_thumbnails_var

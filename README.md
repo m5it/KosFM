@@ -25,8 +25,9 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **Multi-Select**: Ctrl+Click / Shift+Click / Shift+Arrow for batch Copy, Paste, Remove
 - **Column Sorting**: Click headers to sort by Name, Size, Modified, Type
 - **Dark Theme**: Toggle between light and dark themes from the View menu
-- **Preview Panel**: Resizable pane showing file info and text previews
+- **Preview Panel**: Resizable pane showing file info, text previews, and image previews
 - **Archive Handling**: Extract / create ZIP and TAR archives
+- **Image Thumbnails**: Optional Pillow-based thumbnails in the file list
 - **Navigation**:
   - Click directories in tree to view contents
   - Double-click folders to navigate into them
@@ -263,7 +264,7 @@ This structure makes the code easy to maintain, test, and extend.
 - [ ] File type icons (replace emoji with actual icons)
 - [ ] Drag and drop support
 - [ ] Archive handling (zip, tar, etc.)
-- [ ] Image thumbnails
+- [x] Image thumbnails
 
 ## Contributing
 

@@ -204,6 +204,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Improved Preview Panel**
   - Photo preview scales to fit panel; checkbox toggles "Fit to panel" / actual size
   - Preview resizes automatically when panel is resized
+- **SSHFS Remote Mounts**
+  - Connect to remote hosts via system `sshfs` binary
+  - Disconnect active mounts from Remote menu
+  - Supports key-based and password-based (via sshpass) authentication
+  - Active mounts are saved in config and unmounted on exit
 
 ### Planned Features
 - File preview panel for images and text

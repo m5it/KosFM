@@ -25,6 +25,8 @@ class MenuBar:
                 - toggle_preview: Called for Show Preview Panel
                 - toggle_thumbnails: Called for Show Image Thumbnails
                 - toggle_theme: Called for Toggle Dark Theme
+                - sshfs_connect: Called for Connect SSHFS
+                - sshfs_disconnect: Called for Disconnect SSHFS
                 - show_shortcuts: Called for Keyboard Shortcuts
                 - show_about: Called for About
                 - focus_search: Called for Search / Filter
@@ -59,6 +61,7 @@ class MenuBar:
         self._create_file_menu()
         self._create_edit_menu()
         self._create_view_menu()
+        self._create_sshfs_menu()
         self._create_help_menu()
         
     def _create_file_menu(self):
@@ -93,7 +96,21 @@ class MenuBar:
             accelerator="Ctrl+Q"
         )
         self.root.bind("<Control-q>", lambda e: self.handlers.get('exit', lambda: None)())
-        
+
+    def _create_sshfs_menu(self):
+        """Create SSHFS remote menu."""
+        self.sshfs_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.menu_bar.add_cascade(label="Remote", menu=self.sshfs_menu)
+
+        self.sshfs_menu.add_command(
+            label="Connect SSHFS",
+            command=self.handlers.get('sshfs_connect')
+        )
+        self.sshfs_menu.add_command(
+            label="Disconnect SSHFS",
+            command=self.handlers.get('sshfs_disconnect')
+        )
+
     def _create_edit_menu(self):
         """Create Edit menu."""
         self.edit_menu.add_command(
@@ -204,6 +221,10 @@ View -> Toggle Dark Theme    Switch between light and dark themes
 
 Preview Panel:
 Fit to panel checkbox   Scale image to fit preview pane
+
+Remote:
+Remote -> Connect SSHFS     Mount remote directory via sshfs
+Remote -> Disconnect SSHFS  Unmount active SSHFS mount
 
 Archives:
 Right-click archive -> Extract Archive   Extract to current directory

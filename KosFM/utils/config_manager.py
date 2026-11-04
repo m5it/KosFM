@@ -42,7 +42,8 @@ class ConfigManager:
             "theme": "light",
             "thumbnails": {
                 "enabled": True
-            }
+            },
+            "sshfs_mounts": {}
         }
         
     def ensure_config_dir(self):

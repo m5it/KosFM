@@ -21,6 +21,7 @@ from .utils.file_utils import format_size, format_time, get_file_type
 from .utils.platform_utils import get_root_directories
 from .utils.archive_handler import ARCHIVE_EXTENSIONS, create_archive, extract_archive
 from .utils.search import walk_search
+from .utils.sshfs_manager import SSHFSManager
 from .utils.theme import ThemeManager
 from .utils.xdg_mime import (
     get_mime_type,
@@ -73,6 +74,8 @@ class KosFMApp:
         self._preview_height = self.config.get("panel", {}).get("preview_height", 120)
         self._preview_sash_save_timer = None
         self._show_thumbnails = self.config.get("thumbnails", {}).get("enabled", True)
+        self._sshfs_manager = SSHFSManager()
+        self._sshfs_mounts = self.config.get("sshfs_mounts", {})
 
         # Search state
         self._cached_entries = []  # last scandir entries for filtering
@@ -120,6 +123,13 @@ class KosFMApp:
             self.root.after_cancel(self._preview_sash_save_timer)
             self._preview_sash_save_timer = None
             self._save_preview_sash_position()
+
+        # Save active SSHFS mounts in config
+        try:
+            mounts = self._sshfs_manager.list_mounts()
+            self.config["sshfs_mounts"] = mounts
+        except Exception:
+            pass
 
         self._save_window_state()
         self.root.destroy()
@@ -330,6 +340,8 @@ class KosFMApp:
             'toggle_preview': self._toggle_preview_panel,
             'toggle_thumbnails': self._toggle_thumbnails,
             'toggle_theme': self._toggle_theme,
+            'sshfs_connect': self._sshfs_connect,
+            'sshfs_disconnect': self._sshfs_disconnect,
             'focus_search': self._focus_search,
             'new_folder': self._on_new_folder,
             'new_file': self._on_new_file,
@@ -1057,6 +1069,56 @@ class KosFMApp:
         self.config_manager.save_config(self.config)
         self._refresh_file_view()
         self.status_bar.update(f"Thumbnails: {'on' if self._show_thumbnails else 'off'}")
+
+    def _sshfs_connect(self):
+        """Show SSHFS connect dialog and mount remote path."""
+        from .ui.sshfs_dialog import SSHFSConnectDialog
+        if not self._sshfs_manager.sshfs_available():
+            self._show_error("sshfs is not installed on this system.\nInstall sshfs to use this feature.")
+            return
+
+        dialog = SSHFSConnectDialog(self.root)
+        data = dialog.show()
+        if not data:
+            return
+
+        alias = data.get("alias") or data["host"]
+        try:
+            mountpoint = self._sshfs_manager.mount(
+                data["host"],
+                alias=alias,
+                port=data.get("port"),
+                identity_file=data.get("identity_file"),
+                password=data.get("password")
+            )
+            # Add to tree panel as remote node if it has an API
+            if hasattr(self.tree_panel, 'add_remote_node'):
+                self.tree_panel.add_remote_node(alias, mountpoint)
+            else:
+                # Fall back: add as bookmark
+                self._add_bookmark(mountpoint)
+            self.status_bar.update(f"SSHFS mounted: {alias} at {mountpoint}")
+        except Exception as e:
+            self._show_error(f"Could not mount SSHFS: {e}")
+
+    def _sshfs_disconnect(self):
+        """Disconnect an active SSHFS mount."""
+        mounts = self._sshfs_manager.list_mounts()
+        if not mounts:
+            self.status_bar.update("No active SSHFS mounts")
+            return
+        if len(mounts) == 1:
+            alias = list(mounts.keys())[0]
+        else:
+            from .ui.sshfs_dialog import SSHFSDisconnectDialog
+            dialog = SSHFSDisconnectDialog(self.root, list(mounts.keys()))
+            alias = dialog.show()
+        if alias:
+            try:
+                self._sshfs_manager.unmount(alias)
+                self.status_bar.update(f"SSHFS unmounted: {alias}")
+            except Exception as e:
+                self._show_error(f"Could not unmount: {e}")
 
     def _on_preview_sash_released(self, event=None):
         """Handle preview panel sash release - save position after a delay."""

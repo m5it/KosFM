@@ -28,6 +28,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **Preview Panel**: Resizable pane showing file info, text previews, and fit/actual-size image previews
 - **Archive Handling**: Extract / create ZIP and TAR archives
 - **Image Thumbnails**: Optional Pillow-based thumbnails in the file list
+- **SSHFS Remote Mounts**: Mount remote directories via system `sshfs`
 - **Navigation**:
   - Click directories in tree to view contents
   - Double-click folders to navigate into them
@@ -124,6 +125,8 @@ KosFM/
 - Python 3.6 or higher
 - tkinter (included with Python standard library)
 - Pillow (optional, installed automatically by `install.py` into a local venv for image thumbnails and previews)
+- sshfs (optional, for Remote SSHFS mounts)
+- sshpass (optional, for password-based SSHFS mounts)
 
 ## Installation
 

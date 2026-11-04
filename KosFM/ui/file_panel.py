@@ -228,6 +228,9 @@ class FilePanel:
         self.context_menu.add_command(label="Open", command=self._on_context_open)
         self.context_menu.add_command(label="Open With...", command=self._on_context_open_with)
         self.context_menu.add_separator()
+        self.context_menu.add_command(label="New Folder", command=self._on_context_new_folder)
+        self.context_menu.add_command(label="New File", command=self._on_context_new_file)
+        self.context_menu.add_separator()
         self.context_menu.add_command(label="Copy", command=self._on_context_copy)
         self.context_menu.add_command(label="Paste", command=self._on_context_paste)
         self.context_menu.add_separator()
@@ -284,11 +287,21 @@ class FilePanel:
         if self.on_context_menu:
             self.on_context_menu("open_with", self._get_selected_item_path())
             
+    def _on_context_new_folder(self):
+        """Context menu: New Folder."""
+        if self.on_context_menu:
+            self.on_context_menu("new_folder", self.current_path)
+
+    def _on_context_new_file(self):
+        """Context menu: New File."""
+        if self.on_context_menu:
+            self.on_context_menu("new_file", self.current_path)
+
     def _on_context_copy(self):
         """Context menu: Copy."""
         if self.on_context_menu:
             self.on_context_menu("copy", self._get_selected_item_path())
-            
+
     def _on_context_paste(self):
         """Context menu: Paste."""
         if self.on_context_menu:

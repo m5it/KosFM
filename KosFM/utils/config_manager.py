@@ -30,7 +30,8 @@ class ConfigManager:
                 "show_hidden_files": False,
                 "show_status_bar": True
             },
-            "mime_apps": {}
+            "mime_apps": {},
+            "bookmarks": []
         }
         
     def ensure_config_dir(self):

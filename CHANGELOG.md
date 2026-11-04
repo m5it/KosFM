@@ -151,6 +151,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cancelable search, status updates, and double-click navigation from results
   - Keyboard shortcut `Ctrl+F` and Edit menu entry
   - Escape key clears search and restores normal directory view
+- **New File / New Folder**
+  - Create empty files and folders from File menu or context menu
+  - Keyboard shortcuts `Ctrl+N` (new file) and `Ctrl+Shift+N` (new folder)
+  - Name validation and duplicate-name guard
+- **Bookmarks / Favorites**
+  - Bookmark current directory with `Ctrl+D` or Edit → Add Bookmark
+  - Persisted in `config.json` and shown as a top-level tree section
+  - Click a bookmark to navigate; Delete key on a bookmark removes it
 
 ### Planned Features
 - File preview panel for images and text

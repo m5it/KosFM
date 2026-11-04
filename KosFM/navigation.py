@@ -35,6 +35,14 @@ class NavigationManager:
         self.app.file_panel.set_path(path)
         self.app.file_panel.set_current_path(path)
 
+        # Highlight bookmark if path is bookmarked
+        if hasattr(self.app, 'tree_panel') and self.app.tree_panel:
+            self.app.tree_panel.tree.selection_set(())
+            for iid, bpath in self.app.tree_panel._bookmarks.items():
+                if os.path.normpath(bpath) == os.path.normpath(path):
+                    self.app.tree_panel.tree.selection_set(iid)
+                    break
+
         self.app.status_bar.update(f"Loading: {path}")
         self.app.current_path = path
         self.app._refresh_file_view()

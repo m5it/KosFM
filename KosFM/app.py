@@ -171,6 +171,14 @@ class KosFMApp:
         
         self._create_tree_panel()
         self._create_file_panel()
+
+    def _load_bookmarks(self):
+        """Load bookmarks from config and add to tree panel."""
+        self.tree_panel.clear_bookmarks()
+        for path in self.config.get("bookmarks", []):
+            if os.path.isdir(path):
+                label = os.path.basename(path) or path
+                self.tree_panel.add_bookmark_node(path, label)
         
         # Restore sash position after window is fully rendered
         if "panel" in self.config and "left_width" in self.config["panel"]:
@@ -197,19 +205,26 @@ class KosFMApp:
             'toggle_hidden': self._toggle_hidden_files,
             'toggle_status': self._toggle_status_bar,
             'focus_search': self._focus_search,
+            'new_folder': self._on_new_folder,
+            'new_file': self._on_new_file,
+            'add_bookmark': self._add_bookmark,
         }
         self.menu_bar = MenuBar(self.root, handlers)
         self.menu_bar.get_show_hidden_var().set(self.config["view"]["show_hidden_files"])
         self.menu_bar.get_show_status_var().set(self.config["view"]["show_status_bar"])
+        # Ensure menu bar handlers dict matches actual methods (defensive)
+        assert 'add_bookmark' in handlers
         
     def _create_tree_panel(self):
         """Create the tree panel."""
         self.tree_panel = TreePanel(
             self.paned_window,
-            on_select_callback=self.nav.on_tree_select,
-            on_expand_callback=self.nav.on_tree_expand
+            on_select_callback=self._on_tree_select,
+            on_expand_callback=self.nav.on_tree_expand,
+            on_bookmark_select=self._on_bookmark_select
         )
         self.tree_panel.add_to_paned_window(weight=0)
+        self._load_bookmarks()
         
     def _create_file_panel(self):
         """Create the file panel."""
@@ -228,7 +243,12 @@ class KosFMApp:
             on_change=self._on_filter_changed,
             on_recursive=self._on_recursive_search
         )
-        # Escape clears search (window-level, but search entry binds it too)
+        # Global keyboard shortcuts
+        self.root.bind("<Control-n>", lambda e: self._on_new_file())
+        self.root.bind("<Control-N>", lambda e: self._on_new_file())
+        self.root.bind("<Control-Shift-N>", lambda e: self._on_new_folder())
+        self.root.bind("<Control-d>", lambda e: self._add_bookmark())
+        self.root.bind("<Control-D>", lambda e: self._add_bookmark())
         self.root.bind("<Escape>", self._on_escape)
         
     def _create_status_bar(self):
@@ -247,6 +267,56 @@ class KosFMApp:
     def _focus_search(self, event=None):
         self.file_panel.focus_search()
         return "break"
+
+    def _on_tree_select(self, event):
+        """Handle tree selection: bookmark vs normal directory."""
+        try:
+            item = self.tree_panel.get_selection()
+            if not item:
+                return
+            iid = item[0]
+            if self.tree_panel.is_bookmark_node(iid):
+                path = self.tree_panel.get_item_path(iid)
+                if path and os.path.isdir(path):
+                    self.nav.navigate_to(path)
+                return
+            # Normal directory
+            path = self.tree_panel.get_item_path(iid)
+            if not path or not os.path.isdir(path):
+                return
+            self.nav.navigate_to(path)
+        except Exception as e:
+            self._show_error(f"Tree selection error: {e}")
+
+    def _on_bookmark_select(self, action, path):
+        """Callback for bookmark interactions from tree panel."""
+        if action == "remove":
+            self._remove_bookmark(path)
+
+    def _add_bookmark(self, path=None):
+        """Add current directory to bookmarks."""
+        path = path or self.current_path
+        if not path or not os.path.isdir(path):
+            self._show_error("No directory selected")
+            return
+        bookmarks = self.config.setdefault("bookmarks", [])
+        if path in bookmarks:
+            self.status_bar.update(f"Already bookmarked: {path}")
+            return
+        bookmarks.append(path)
+        self.config_manager.save_config(self.config)
+        label = os.path.basename(path) or path
+        self.tree_panel.add_bookmark_node(path, label)
+        self.status_bar.update(f"Bookmarked: {label}")
+
+    def _remove_bookmark(self, path):
+        """Remove a bookmark path from config and tree."""
+        bookmarks = self.config.setdefault("bookmarks", [])
+        if path in bookmarks:
+            bookmarks.remove(path)
+            self.config_manager.save_config(self.config)
+        self.tree_panel.remove_bookmark_node(path)
+        self.status_bar.update(f"Removed bookmark: {os.path.basename(path) or path}")
 
     def _on_escape(self, event=None):
         if self._search_active or self.file_panel.get_search_query():
@@ -461,7 +531,11 @@ class KosFMApp:
         elif action == "properties":
             dialog = PropertiesDialog(self.root, path)
             dialog.show()
-            
+        elif action == "new_folder":
+            self._on_new_folder(path)
+        elif action == "new_file":
+            self._on_new_file(path)
+
     def _on_context_copy(self, path):
         """Copy file/directory to clipboard."""
         self._clipboard = path
@@ -500,23 +574,82 @@ class KosFMApp:
         except Exception as e:
             self._show_error(f"Could not paste: {e}")
             
+    def _on_new_folder(self, target_dir=None):
+        """Create a new folder in current directory."""
+        target_dir = target_dir or self.current_path
+        if not target_dir or not os.path.isdir(target_dir):
+            self._show_error("No directory selected")
+            return
+
+        name = simpledialog.askstring("New Folder", "Folder name:", initialvalue="New Folder")
+        if not name:
+            return
+
+        # Sanitize name to avoid path traversal / invalid chars
+        name = name.replace(os.sep, "_").replace("/", "_")
+        if not name:
+            self._show_error("Invalid folder name")
+            return
+
+        new_path = os.path.join(target_dir, name)
+        if os.path.exists(new_path):
+            self._show_error(f"Cannot create: '{name}' already exists")
+            return
+
+        try:
+            os.mkdir(new_path)
+            self.status_bar.update(f"Created folder: {name}")
+            self._refresh_file_view()
+        except Exception as e:
+            self._show_error(f"Could not create folder: {e}")
+
+    def _on_new_file(self, target_dir=None):
+        """Create a new empty file in current directory."""
+        target_dir = target_dir or self.current_path
+        if not target_dir or not os.path.isdir(target_dir):
+            self._show_error("No directory selected")
+            return
+
+        name = simpledialog.askstring("New File", "File name:", initialvalue="new_file.txt")
+        if not name:
+            return
+
+        # Sanitize name
+        name = name.replace(os.sep, "_").replace("/", "_")
+        if not name:
+            self._show_error("Invalid file name")
+            return
+
+        new_path = os.path.join(target_dir, name)
+        if os.path.exists(new_path):
+            self._show_error(f"Cannot create: '{name}' already exists")
+            return
+
+        try:
+            with open(new_path, "w", encoding="utf-8") as f:
+                pass
+            self.status_bar.update(f"Created file: {name}")
+            self._refresh_file_view()
+        except Exception as e:
+            self._show_error(f"Could not create file: {e}")
+
     def _on_context_rename(self, path):
         """Rename file or directory."""
         if not path:
             return
-            
+
         old_name = os.path.basename(path)
-        new_name = simpledialog.askstring("Rename", f"Rename '{old_name}' to:", 
+        new_name = simpledialog.askstring("Rename", f"Rename '{old_name}' to:",
                                           initialvalue=old_name)
         if not new_name or new_name == old_name:
             return
-            
+
         new_path = os.path.join(os.path.dirname(path), new_name)
-        
+
         if os.path.exists(new_path):
             self._show_error(f"Cannot rename: '{new_name}' already exists")
             return
-            
+
         try:
             os.rename(path, new_path)
             self.status_bar.update(f"Renamed: {old_name} -> {new_name}")

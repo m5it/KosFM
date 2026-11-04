@@ -11,8 +11,8 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 
 - **Dual-Pane Interface**: Resizable directory tree on the left, file listing on the right
 - **Linux Desktop Integration**: Full xdg-mime support for file associations
-- **File Operations**: Copy, Paste, Rename, and Remove files/directories
-- **Context Menu**: Right-click menu with Open, Open With, Copy, Paste, Rename, Remove, Copy Path, Properties
+- **File Operations**: Copy, Paste, Rename, Remove, and Create New File/Folder
+- **Context Menu**: Right-click menu with Open, Open With, New Folder, New File, Copy, Paste, Rename, Remove, Copy Path, Properties
 - **Panel Width Persistence**: Panel sizes are saved and restored between sessions
 - **File Opening**: Double-click to open files with default application
 - **Open With**: Choose from available applications and set defaults
@@ -33,6 +33,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 - **Error Handling**: Graceful handling of permission errors and inaccessible directories
 - **Search / Filter**: Live filter in folder and recursive subdirectory search
+- **Bookmarks / Favorites**: Quick-access bookmarks in the sidebar (Ctrl+D)
 - **Status Bar**: Shows item count and current path
 
 ## Screenshots
@@ -60,8 +61,10 @@ KosFM now includes full file operation support:
 - **Paste** - Paste into current directory (auto-handles duplicates with suffix)
 - **Rename** - Rename files and directories with dialog
 - **Remove** - Delete files and directories with confirmation
+- **New Folder** - Create a new folder in the current directory
+- **New File** - Create a new empty file in the current directory
 
-All operations include proper error handling and user confirmation for destructive actions.
+All operations include proper error handling, duplicate-name guards, and user confirmation for destructive actions.
 
 ## File Opening (Linux)
 
@@ -154,6 +157,8 @@ python main.py
 |--------|-------------|
 | Open | Open file with default application |
 | Open With... | Choose application to open file |
+| New Folder | Create a new folder in current directory |
+| New File | Create a new empty file in current directory |
 | Copy | Copy file/directory to clipboard |
 | Paste | Paste from clipboard to current directory |
 | Rename | Rename file or directory |
@@ -176,12 +181,15 @@ python main.py
 | Option | Shortcut | Description |
 |--------|----------|-------------|
 | Refresh | Ctrl+R | Reload current directory |
+| New Folder | Ctrl+Shift+N | Create a new folder |
+| New File | Ctrl+N | Create a new empty file |
 | Exit | Ctrl+Q | Close application |
 
 ### Edit Menu
 | Option | Shortcut | Description |
 |--------|----------|-------------|
 | Search / Filter | Ctrl+F | Focus search box |
+| Add Bookmark | Ctrl+D | Bookmark current directory |
 
 ### View Menu
 | Option | Description |
@@ -229,7 +237,7 @@ This structure makes the code easy to maintain, test, and extend.
 
 - [ ] File preview panel
 - [x] Search functionality
-- [ ] Bookmarks/favorites
+- [x] Bookmarks/favorites
 - [ ] Dark theme
 - [ ] Additional keyboard shortcuts
 - [ ] File type icons (replace emoji with actual icons)

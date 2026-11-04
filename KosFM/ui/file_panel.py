@@ -321,6 +321,14 @@ class FilePanel:
         """Register callback when sort column/direction changes."""
         self._on_sort_change = callback
 
+    def set_theme_colors(self, bg, fg):
+        """Apply theme colors to internal non-ttk widgets (context menu)."""
+        if hasattr(self, 'context_menu'):
+            try:
+                self.context_menu.configure(bg=bg, fg=fg)
+            except Exception:
+                pass
+
     def focus_search(self):
         self.search_entry.focus_set()
         if self._search_has_placeholder:

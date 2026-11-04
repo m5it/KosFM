@@ -36,7 +36,8 @@ class ConfigManager:
             "sort": {
                 "column": "name",
                 "reverse": False
-            }
+            },
+            "theme": "light"
         }
         
     def ensure_config_dir(self):

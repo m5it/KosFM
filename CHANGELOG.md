@@ -180,6 +180,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Click again to toggle ascending/descending
   - Visual ▲ / ▼ indicators in headers
   - Sort preference persisted in config.json
+- **Dark Theme**
+  - New View → Toggle Dark Theme menu item
+  - Switches background, foreground, treeview, entry, button, and menu colors
+  - Theme preference persisted in config.json
 
 ### Planned Features
 - File preview panel for images and text

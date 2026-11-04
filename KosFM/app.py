@@ -20,6 +20,7 @@ from .utils.error_handler import handle_error
 from .utils.file_utils import format_size, format_time, get_file_type
 from .utils.platform_utils import get_root_directories
 from .utils.search import walk_search
+from .utils.theme import ThemeManager
 from .utils.xdg_mime import (
     get_mime_type,
     get_default_application,
@@ -47,7 +48,10 @@ class KosFMApp:
         # Initialize config manager
         self.config_manager = ConfigManager()
         self.config = self.config_manager.load_config()
-        
+
+        # Initialize theme manager
+        self.theme_manager = ThemeManager(self.root)
+
         # Initialize navigation manager
         self.nav = NavigationManager(self)
         
@@ -63,6 +67,7 @@ class KosFMApp:
         self._right_sash_save_timer = None
         self._sort_column = "name"
         self._sort_reverse = False
+        self._theme = self.config.get("theme", "light")
 
         # Search state
         self._cached_entries = []  # last scandir entries for filtering
@@ -202,23 +207,66 @@ class KosFMApp:
             logger.debug("Could not save right sash position: %s", e)
         finally:
             self._right_sash_save_timer = None
-        
+
+    def _apply_theme(self, theme_name):
+        """Apply theme and recursively update menu colors."""
+        self.theme_manager.apply(theme_name)
+        colors = self.theme_manager.get_colors(theme_name)
+
+        # Update menu colors manually (ttk styles don't affect tk.Menu)
+        if hasattr(self, 'menu_bar'):
+            for menu in (self.menu_bar.file_menu, self.menu_bar.edit_menu,
+                         self.menu_bar.view_menu, self.menu_bar.help_menu,
+                         self.menu_bar.menu_bar):
+                try:
+                    menu.configure(bg=colors["menu_bg"], fg=colors["fg"])
+                except Exception:
+                    pass
+        if hasattr(self, 'status_bar'):
+            try:
+                self.status_bar.set_theme_colors(colors["status_bg"], colors["fg"])
+            except Exception:
+                pass
+        if hasattr(self, 'tree_panel'):
+            try:
+                self.tree_panel.set_theme_colors(colors["tree_bg"], colors["fg"])
+            except Exception:
+                pass
+        if hasattr(self, 'file_panel'):
+            try:
+                self.file_panel.set_theme_colors(colors["tree_bg"], colors["fg"])
+            except Exception:
+                pass
+
+    def _toggle_theme(self):
+        """Toggle between light and dark theme."""
+        new_theme = "dark" if self._theme == "light" else "light"
+        self._theme = new_theme
+        self.config["theme"] = new_theme
+        self.config_manager.save_config(self.config)
+        self._apply_theme(new_theme)
+        self.status_bar.update(f"Theme: {new_theme}")
+
     def setup_ui(self):
         """Initialize the user interface."""
         self._create_menu_bar()
-        
+
         self.main_frame = ttk.Frame(self.root, padding="5")
         self.main_frame.grid(row=0, column=0, sticky="nsew")
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
-        
+
         self.paned_window = ttk.PanedWindow(self.main_frame, orient="horizontal")
         self.paned_window.grid(row=0, column=0, sticky="nsew")
         self.main_frame.columnconfigure(0, weight=1)
         self.main_frame.rowconfigure(0, weight=1)
-        
+
         self._create_tree_panel()
         self._create_file_panel()
+        self._create_status_bar()
+
+        # Apply theme now that all widgets (including menus and status bar) exist.
+        self._apply_theme(self._theme)
 
     def _load_bookmarks(self):
         """Load bookmarks from config and add to tree panel."""
@@ -240,8 +288,6 @@ class KosFMApp:
             saved_height = self.config["panel"]["right_top_height"]
             self.root.after(150, lambda: self._restore_right_sash_position(saved_height))
 
-        self._create_status_bar()
-        
     def _restore_sash_position(self, width):
         """Restore horizontal sash position after window is rendered."""
         try:
@@ -265,6 +311,7 @@ class KosFMApp:
             'exit': self.root.destroy,
             'toggle_hidden': self._toggle_hidden_files,
             'toggle_status': self._toggle_status_bar,
+            'toggle_theme': self._toggle_theme,
             'focus_search': self._focus_search,
             'new_folder': self._on_new_folder,
             'new_file': self._on_new_file,

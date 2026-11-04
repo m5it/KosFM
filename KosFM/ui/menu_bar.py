@@ -22,6 +22,7 @@ class MenuBar:
                 - exit: Called for Exit
                 - toggle_hidden: Called for Show Hidden Files
                 - toggle_status: Called for Show Status Bar
+                - toggle_theme: Called for Toggle Dark Theme
                 - show_shortcuts: Called for Keyboard Shortcuts
                 - show_about: Called for About
                 - focus_search: Called for Search / Filter
@@ -127,7 +128,14 @@ class MenuBar:
             variable=self.show_status_var,
             command=self.handlers.get('toggle_status')
         )
-        
+
+        self.view_menu.add_separator()
+
+        self.view_menu.add_command(
+            label="Toggle Dark Theme",
+            command=self.handlers.get('toggle_theme')
+        )
+
     def _create_help_menu(self):
         """Create Help menu."""
         self.help_menu.add_command(
@@ -174,15 +182,12 @@ Edit -> Search / Filter    Focus search box
 Edit -> Add Bookmark       Bookmark current directory
 View -> Show Hidden Files    Toggle hidden files
 View -> Show Status Bar      Toggle status bar
+View -> Toggle Dark Theme    Switch between light and dark themes
 """
         messagebox.showinfo("Keyboard Shortcuts", shortcuts)
         
     def _show_about(self):
         """Show About dialog."""
-        from ..config import APP_NAME
-        
-        from ..config import APP_VERSION
-
         about_text = f"""{APP_NAME}
 
 Version: {APP_VERSION}
@@ -198,6 +203,9 @@ Features:
 - Context menu with file operations
 - Lazy loading directory tree
 - File details (size, date, type)
+- Keyboard navigation and multi-select
+- Clickable column sorting
+- Light / dark theme toggle
 - Panel width persistence
 - Cross-platform support (Linux, Windows, macOS)
 

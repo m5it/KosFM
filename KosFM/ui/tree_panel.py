@@ -56,6 +56,10 @@ class TreePanel:
     def on_bookmark_select(self, callback):
         self._bookmark_callback = callback
 
+    def set_theme_colors(self, bg, fg):
+        """Apply theme colors to internal non-ttk widgets if needed."""
+        pass  # Treeview handled via ttk style; placeholder for future widgets
+
     def _create_widget(self):
         """Create the tree panel widget."""
         # Create frame for tree panel

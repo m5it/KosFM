@@ -24,7 +24,8 @@ class ConfigManager:
                 "y": 100
             },
             "panel": {
-                "left_width": TREE_WIDTH
+                "left_width": TREE_WIDTH,
+                "right_top_height": 70
             },
             "view": {
                 "show_hidden_files": False,

@@ -159,6 +159,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Bookmark current directory with `Ctrl+D` or Edit → Add Bookmark
   - Persisted in `config.json` and shown as a top-level tree section
   - Click a bookmark to navigate; Delete key on a bookmark removes it
+- **Resizable File Panel (Vertical Sash)**
+  - Drag the horizontal sash in the right panel to resize the top controls (path bar + search bar) vs the file list
+  - Sash position is saved to `config.json` and restored on startup
 
 ### Planned Features
 - File preview panel for images and text

@@ -37,11 +37,14 @@ class FilePanel:
         """Create the file panel widget."""
         # Create frame for file panel
         self.frame = ttk.Frame(self.parent)
-        
-        # Configure grid
+
+        # Configure grid so paned window fills file panel
         self.frame.columnconfigure(0, weight=1)
-        self.frame.rowconfigure(2, weight=1)
-        
+        self.frame.rowconfigure(0, weight=1)
+
+        # Create the vertical paned window splitting top controls / file tree
+        self._create_vertical_paned()
+
         # Create path bar
         self._create_path_bar()
 
@@ -50,11 +53,27 @@ class FilePanel:
 
         # Create file tree
         self._create_file_tree()
-        
+
+        # Add top-controls frame and tree frame to the paned window
+        self._add_panes()
+
+    def _create_vertical_paned(self):
+        """Create the vertical PanedWindow that splits controls from file list."""
+        self.v_paned = ttk.PanedWindow(self.frame, orient="vertical")
+        self.v_paned.grid(row=0, column=0, sticky="nsew")
+
+        self.controls_frame = ttk.Frame(self.v_paned)
+        self.tree_frame_container = ttk.Frame(self.v_paned)
+
+    def _add_panes(self):
+        """Add controls and tree frames to the vertical paned window."""
+        self.v_paned.add(self.controls_frame, weight=0)
+        self.v_paned.add(self.tree_frame_container, weight=1)
+
     def _create_path_bar(self):
         """Create the path bar."""
-        self.path_frame = ttk.Frame(self.frame)
-        self.path_frame.grid(row=0, column=0, sticky="ew", pady=(0, 5))
+        self.path_frame = ttk.Frame(self.controls_frame)
+        self.path_frame.pack(fill="x", pady=(0, 3))
         self.path_frame.columnconfigure(1, weight=1)
         
         # Up button
@@ -72,8 +91,8 @@ class FilePanel:
         
     def _create_file_tree(self):
         """Create the file listing tree."""
-        tree_frame = ttk.Frame(self.frame)
-        tree_frame.grid(row=1, column=0, sticky="nsew")
+        tree_frame = ttk.Frame(self.tree_frame_container)
+        tree_frame.pack(fill="both", expand=True)
         tree_frame.columnconfigure(0, weight=1)
         tree_frame.rowconfigure(0, weight=1)
         
@@ -111,13 +130,10 @@ class FilePanel:
         self.tree.bind("<Button-3>", self._on_right_click)  # Right-click
         self.tree.bind("<Control-Button-1>", self._on_right_click)  # Ctrl+click (macOS)
 
-        # Search entry keyboard shortcuts (must not propagate when focused)
-        self.search_entry.bind("<Escape>", self._on_search_escape)
-        
     def _create_search_bar(self):
         """Create the search/filter bar."""
-        self.search_frame = ttk.Frame(self.frame)
-        self.search_frame.grid(row=1, column=0, sticky="ew", pady=(0, 5))
+        self.search_frame = ttk.Frame(self.controls_frame)
+        self.search_frame.pack(fill="x")
         self.search_frame.columnconfigure(1, weight=1)
 
         ttk.Label(self.search_frame, text="🔍").grid(row=0, column=0, padx=(0, 4))
@@ -216,6 +232,27 @@ class FilePanel:
         """Register search callbacks from app."""
         self._on_search_change = on_change
         self._on_search_recursive = on_recursive
+
+    def set_controls_height(self, height):
+        """Set height of the top controls pane (vertical sash position)."""
+        try:
+            if self.v_paned.winfo_exists():
+                self.v_paned.sashpos(0, height)
+        except Exception:
+            pass
+
+    def get_controls_height(self):
+        """Return current top-controls pane height."""
+        try:
+            if self.v_paned.winfo_exists():
+                return self.v_paned.sashpos(0)
+        except Exception:
+            pass
+        return None
+
+    def bind_sash_change(self, callback):
+        """Bind a callback called when the vertical sash is released."""
+        self.v_paned.bind("<ButtonRelease-1>", lambda e: callback())
 
     def focus_search(self):
         self.search_entry.focus_set()

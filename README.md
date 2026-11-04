@@ -20,7 +20,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **Saved Preferences**: Remembers your "Open With" choices between sessions
 - **Lazy Loading**: Directories load on-demand for better performance
 - **File Details**: View file size, modification date, and type
-- **Resizable Panels**: Drag the divider to adjust panel widths
+- **Resizable Panels**: Drag the divider to adjust panel widths and the right-panel vertical sash to adjust top-controls height
 - **Navigation**: 
   - Click directories in tree to view contents
   - Double-click folders to navigate into them

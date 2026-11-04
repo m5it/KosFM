@@ -60,6 +60,7 @@ class KosFMApp:
         
         self.current_path = None
         self._sash_save_timer = None
+        self._right_sash_save_timer = None
 
         # Search state
         self._cached_entries = []  # last scandir entries for filtering
@@ -94,12 +95,16 @@ class KosFMApp:
         
     def _on_window_close(self):
         """Handle window close event."""
-        # Cancel any pending sash save timer
+        # Cancel any pending sash save timers
         if self._sash_save_timer:
             self.root.after_cancel(self._sash_save_timer)
             self._sash_save_timer = None
             self._save_sash_position()
-        
+        if self._right_sash_save_timer:
+            self.root.after_cancel(self._right_sash_save_timer)
+            self._right_sash_save_timer = None
+            self._save_right_sash_position()
+
         self._save_window_state()
         self.root.destroy()
         
@@ -116,7 +121,7 @@ class KosFMApp:
         except ValueError:
             pass
             
-        # Also save sash position as backup
+        # Also save sash positions as backup
         if hasattr(self, 'paned_window'):
             try:
                 sash_pos = self.paned_window.sashpos(0)
@@ -125,7 +130,16 @@ class KosFMApp:
                 self.config["panel"]["left_width"] = sash_pos
             except:
                 pass
-            
+        if hasattr(self, 'file_panel'):
+            try:
+                right_sash = self.file_panel.get_controls_height()
+                if right_sash is not None:
+                    if "panel" not in self.config:
+                        self.config["panel"] = {}
+                    self.config["panel"]["right_top_height"] = right_sash
+            except:
+                pass
+
         self.config["view"]["show_hidden_files"] = self.menu_bar.get_show_hidden_var().get()
         self.config["view"]["show_status_bar"] = self.menu_bar.get_show_status_var().get()
         
@@ -142,7 +156,7 @@ class KosFMApp:
         self._sash_save_timer = self.root.after(500, self._save_sash_position)
         
     def _save_sash_position(self):
-        """Save the current sash position to config."""
+        """Save the current left/right sash position to config."""
         try:
             sash_pos = self.paned_window.sashpos(0)
             if "panel" not in self.config:
@@ -154,6 +168,27 @@ class KosFMApp:
             logger.debug("Could not save sash position: %s", e)
         finally:
             self._sash_save_timer = None
+
+    def _on_right_sash_released(self, event=None):
+        """Handle vertical sash release in file panel."""
+        if self._right_sash_save_timer:
+            self.root.after_cancel(self._right_sash_save_timer)
+        self._right_sash_save_timer = self.root.after(500, self._save_right_sash_position)
+
+    def _save_right_sash_position(self):
+        """Save the current file-panel vertical sash position."""
+        try:
+            height = self.file_panel.get_controls_height()
+            if height is not None:
+                if "panel" not in self.config:
+                    self.config["panel"] = {}
+                self.config["panel"]["right_top_height"] = height
+                self.config_manager.save_config(self.config)
+                logger.debug("Saved right panel top height: %s", height)
+        except Exception as e:
+            logger.debug("Could not save right sash position: %s", e)
+        finally:
+            self._right_sash_save_timer = None
         
     def setup_ui(self):
         """Initialize the user interface."""
@@ -180,22 +215,35 @@ class KosFMApp:
                 label = os.path.basename(path) or path
                 self.tree_panel.add_bookmark_node(path, label)
         
-        # Restore sash position after window is fully rendered
+        # Restore horizontal sash position after window is fully rendered
         if "panel" in self.config and "left_width" in self.config["panel"]:
             saved_width = self.config["panel"]["left_width"]
             self.root.after(100, lambda: self._restore_sash_position(saved_width))
         else:
             self.paned_window.sashpos(0, TREE_WIDTH)
-        
+
+        # Restore vertical sash position in file panel
+        if "panel" in self.config and "right_top_height" in self.config["panel"]:
+            saved_height = self.config["panel"]["right_top_height"]
+            self.root.after(150, lambda: self._restore_right_sash_position(saved_height))
+
         self._create_status_bar()
         
     def _restore_sash_position(self, width):
-        """Restore sash position after window is rendered."""
+        """Restore horizontal sash position after window is rendered."""
         try:
             self.paned_window.sashpos(0, width)
             logger.debug("Restored panel width: %s", width)
         except Exception as e:
             logger.debug("Could not restore sash position: %s", e)
+
+    def _restore_right_sash_position(self, height):
+        """Restore vertical sash position in file panel."""
+        try:
+            self.file_panel.set_controls_height(height)
+            logger.debug("Restored right panel top height: %s", height)
+        except Exception as e:
+            logger.debug("Could not restore right sash position: %s", e)
         
     def _create_menu_bar(self):
         """Create menu bar with handlers."""
@@ -243,6 +291,7 @@ class KosFMApp:
             on_change=self._on_filter_changed,
             on_recursive=self._on_recursive_search
         )
+        self.file_panel.bind_sash_change(self._on_right_sash_released)
         # Global keyboard shortcuts
         self.root.bind("<Control-n>", lambda e: self._on_new_file())
         self.root.bind("<Control-N>", lambda e: self._on_new_file())

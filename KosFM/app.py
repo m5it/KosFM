@@ -293,11 +293,13 @@ class KosFMApp:
         )
         self.file_panel.bind_sash_change(self._on_right_sash_released)
         # Global keyboard shortcuts
+        # Global keyboard shortcuts
         self.root.bind("<Control-n>", lambda e: self._on_new_file())
         self.root.bind("<Control-N>", lambda e: self._on_new_file())
         self.root.bind("<Control-Shift-N>", lambda e: self._on_new_folder())
         self.root.bind("<Control-d>", lambda e: self._add_bookmark())
         self.root.bind("<Control-D>", lambda e: self._add_bookmark())
+        self.root.bind("<F5>", lambda e: self._refresh_file_view())
         self.root.bind("<Escape>", self._on_escape)
         
     def _create_status_bar(self):
@@ -584,6 +586,8 @@ class KosFMApp:
             self._on_new_folder(path)
         elif action == "new_file":
             self._on_new_file(path)
+        elif action == "go_to_parent":
+            self.nav.go_to_parent()
 
     def _on_context_copy(self, path):
         """Copy file/directory to clipboard."""

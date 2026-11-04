@@ -130,6 +130,15 @@ class FilePanel:
         self.tree.bind("<Button-3>", self._on_right_click)  # Right-click
         self.tree.bind("<Control-Button-1>", self._on_right_click)  # Ctrl+click (macOS)
 
+        # Keyboard navigation
+        self.tree.bind("<Up>", self._on_key_up)
+        self.tree.bind("<Down>", self._on_key_down)
+        self.tree.bind("<Return>", self._on_key_return)
+        self.tree.bind("<KP_Enter>", self._on_key_return)
+        self.tree.bind("<BackSpace>", self._on_key_backspace)
+        self.tree.bind("<Delete>", self._on_key_delete)
+        self.tree.bind("<F2>", self._on_key_rename)
+
     def _create_search_bar(self):
         """Create the search/filter bar."""
         self.search_frame = ttk.Frame(self.controls_frame)
@@ -392,7 +401,53 @@ class FilePanel:
     def _on_double_click(self, event):
         """Handle double-click event."""
         self.on_double_click(event)
-        
+
+    def _on_key_up(self, event=None):
+        """Move selection up."""
+        item = self.tree.focus()
+        prev = self.tree.prev(item)
+        if prev:
+            self.tree.selection_set(prev)
+            self.tree.focus(prev)
+            self.tree.see(prev)
+        return "break"
+
+    def _on_key_down(self, event=None):
+        """Move selection down."""
+        item = self.tree.focus()
+        next_item = self.tree.next(item)
+        if next_item:
+            self.tree.selection_set(next_item)
+            self.tree.focus(next_item)
+            self.tree.see(next_item)
+        return "break"
+
+    def _on_key_return(self, event=None):
+        """Open selected item."""
+        if self.on_double_click:
+            self.on_double_click(event)
+        return "break"
+
+    def _on_key_backspace(self, event=None):
+        """Navigate to parent directory."""
+        if self.on_context_menu:
+            self.on_context_menu("go_to_parent", self.current_path)
+        return "break"
+
+    def _on_key_delete(self, event=None):
+        """Delete selected item."""
+        path = self._get_selected_item_path()
+        if path and self.on_context_menu:
+            self.on_context_menu("remove", path)
+        return "break"
+
+    def _on_key_rename(self, event=None):
+        """Rename selected item."""
+        path = self._get_selected_item_path()
+        if path and self.on_context_menu:
+            self.on_context_menu("rename", path)
+        return "break"
+
     def clear(self):
         """Clear all items from the tree."""
         for item in self.tree.get_children():

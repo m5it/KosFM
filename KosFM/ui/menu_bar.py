@@ -63,9 +63,10 @@ class MenuBar:
         self.file_menu.add_command(
             label="Refresh",
             command=self.handlers.get('refresh'),
-            accelerator="Ctrl+R"
+            accelerator="F5 / Ctrl+R"
         )
         self.root.bind("<Control-r>", lambda e: self.handlers.get('refresh', lambda: None)())
+        self.root.bind("<F5>", lambda e: self.handlers.get('refresh', lambda: None)())
         
         self.file_menu.add_command(
             label="New Folder",
@@ -151,11 +152,16 @@ Ctrl+N      New file
 Ctrl+Shift+N  New folder
 Ctrl+F      Focus search box
 Ctrl+D      Add current directory to bookmarks
+F5          Refresh current directory
 Esc         Clear search
 
 Navigation:
-Double-click    Open folder
-Enter           Navigate to path (in path bar)
+Arrow Up / Down     Move selection in file list
+Enter               Open selected file / folder
+Backspace           Go to parent directory
+F2                  Rename selected item
+Delete              Delete selected item
+Double-click        Open folder
 
 Menu:
 File -> Refresh        Reload directory

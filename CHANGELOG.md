@@ -162,6 +162,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Resizable File Panel (Vertical Sash)**
   - Drag the horizontal sash in the right panel to resize the top controls (path bar + search bar) vs the file list
   - Sash position is saved to `config.json` and restored on startup
+- **Keyboard Navigation**
+  - Arrow Up/Down moves selection in the file list
+  - Enter opens selected file/folder
+  - Backspace goes to parent directory
+  - F2 renames selected item
+  - Delete removes selected item
+  - F5 / Ctrl+R refreshes current directory
 
 ### Planned Features
 - File preview panel for images and text

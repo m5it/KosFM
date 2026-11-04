@@ -21,7 +21,8 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **Lazy Loading**: Directories load on-demand for better performance
 - **File Details**: View file size, modification date, and type
 - **Resizable Panels**: Drag the divider to adjust panel widths and the right-panel vertical sash to adjust top-controls height
-- **Navigation**: 
+- **Keyboard Navigation**: Arrow keys, Enter, Backspace, F2, Delete, F5
+- **Navigation**:
   - Click directories in tree to view contents
   - Double-click folders to navigate into them
   - "Up" button to go to parent directory
@@ -170,17 +171,25 @@ python main.py
 
 | Shortcut | Action |
 |----------|--------|
-| Ctrl+R | Refresh current directory |
+| Ctrl+R / F5 | Refresh current directory |
 | Ctrl+Q | Exit application |
+| Ctrl+N | New file |
+| Ctrl+Shift+N | New folder |
 | Ctrl+F | Focus search/filter box |
+| Ctrl+D | Add current directory to bookmarks |
 | Esc | Clear search and restore directory view |
+| Arrow Up/Down | Move selection in file list |
+| Enter | Open selected file / folder |
+| Backspace | Go to parent directory |
+| F2 | Rename selected item |
+| Delete | Delete selected item |
 
 ## Menu Bar
 
 ### File Menu
 | Option | Shortcut | Description |
 |--------|----------|-------------|
-| Refresh | Ctrl+R | Reload current directory |
+| Refresh | F5 / Ctrl+R | Reload current directory |
 | New Folder | Ctrl+Shift+N | Create a new folder |
 | New File | Ctrl+N | Create a new empty file |
 | Exit | Ctrl+Q | Close application |

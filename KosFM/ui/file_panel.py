@@ -435,7 +435,7 @@ class FilePanel:
         shift = (event.state & 0x0001) != 0
 
         if ctrl:
-            if self.tree.selection_includes(item):
+            if item in self.tree.selection():
                 self.tree.selection_remove(item)
             else:
                 self.tree.selection_add(item)
@@ -478,7 +478,7 @@ class FilePanel:
 
         # Select item under cursor if not already selected
         item = self.tree.identify_row(event.y)
-        if item and not self.tree.selection_includes(item):
+        if item and item not in self.tree.selection():
             self.tree.selection_set(item)
         if item:
             self.tree.focus(item)

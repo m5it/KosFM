@@ -93,9 +93,17 @@ class PreviewPanel:
         self.title_var.set(f"📄 {name}")
         self.info_var.set(f"{file_type}\n{size}\n{modified}")
 
-        if is_image_file(path) and pillow_available():
-            if self._show_image(path):
+        if is_image_file(path):
+            if pillow_available():
+                if self._show_image(path):
+                    return
+                self._hide_image()
+                self._set_content("[Image — thumbnail failed]")
                 return
+            self._hide_image()
+            ext = os.path.splitext(path)[1].upper().lstrip(".") or "Image"
+            self._set_content(f"{ext} image — install Pillow for preview")
+            return
 
         self._hide_image()
         text = self._read_text_preview(path)

@@ -82,16 +82,18 @@ class ThumbnailCache:
         """Generate a thumbnail PhotoImage using Pillow."""
         if _ImageModule is None:
             return None
-        img = _ImageModule.open(path)
-        img.thumbnail(self.size)
-        # Convert to a format tkinter can consume reliably
-        if img.mode not in ("RGB", "RGBA", "L"):
-            img = img.convert("RGBA")
-        from io import BytesIO
-        buffer = BytesIO()
-        img.save(buffer, format="PNG")
-        buffer.seek(0)
-        return tk.PhotoImage(data=buffer.getvalue())
+        try:
+            from PIL import ImageTk
+            img = _ImageModule.open(path)
+            if img.mode not in ("RGB", "RGBA", "L"):
+                try:
+                    img = img.convert("RGBA")
+                except Exception:
+                    img = img.convert("RGB")
+            img.thumbnail(self.size)
+            return ImageTk.PhotoImage(img)
+        except Exception:
+            return None
 
     def clear(self):
         """Clear cached thumbnails."""

@@ -29,7 +29,8 @@ class FilePanel:
         self.on_double_click = on_double_click_callback
         self.on_file_click = on_file_click_callback
         self.on_context_menu = on_context_menu_callback
-        
+        self.on_selection_change = None
+
         self._create_widget()
         self._create_context_menu()
         
@@ -99,7 +100,7 @@ class FilePanel:
         self.tree = ttk.Treeview(
             tree_frame,
             columns=FILE_COLUMNS,
-            selectmode="browse",
+            selectmode="extended",
             show="headings"
         )
         
@@ -128,15 +129,30 @@ class FilePanel:
         self.tree.bind("<Double-1>", self._on_double_click)
         self.tree.bind("<Button-1>", self._on_single_click)
         self.tree.bind("<Button-3>", self._on_right_click)  # Right-click
-        self.tree.bind("<Control-Button-1>", self._on_right_click)  # Ctrl+click (macOS)
+
+        # Track selection anchor and notify app after clicks
+        self._selection_anchor = None
+        def _track_and_update(event=None):
+            self._track_anchor(event)
+            if self.on_selection_change:
+                self.on_selection_change()
+        self.tree.bind("<Button-1>", _track_and_update, add="+")
 
         # Keyboard navigation
-        self.tree.bind("<Up>", self._on_key_up)
-        self.tree.bind("<Down>", self._on_key_down)
+        def _key_nav_with_update(handler):
+            def wrapper(event=None):
+                result = handler(event)
+                if self.on_selection_change:
+                    self.on_selection_change()
+                return result
+            return wrapper
+
+        self.tree.bind("<Up>", _key_nav_with_update(self._on_key_up))
+        self.tree.bind("<Down>", _key_nav_with_update(self._on_key_down))
         self.tree.bind("<Return>", self._on_key_return)
         self.tree.bind("<KP_Enter>", self._on_key_return)
         self.tree.bind("<BackSpace>", self._on_key_backspace)
-        self.tree.bind("<Delete>", self._on_key_delete)
+        self.tree.bind("<Delete>", _key_nav_with_update(self._on_key_delete))
         self.tree.bind("<F2>", self._on_key_rename)
 
     def _create_search_bar(self):
@@ -150,6 +166,8 @@ class FilePanel:
         self.search_var = tk.StringVar()
         self.search_entry = ttk.Entry(self.search_frame, textvariable=self.search_var)
         self.search_entry.grid(row=0, column=1, sticky="ew")
+
+
 
         self.search_clear_btn = ttk.Button(self.search_frame, text="✕", width=3,
                                            command=self._on_search_clear)
@@ -242,6 +260,10 @@ class FilePanel:
         self._on_search_change = on_change
         self._on_search_recursive = on_recursive
 
+    def set_selection_change_callback(self, callback):
+        """Register callback fired whenever tree selection changes."""
+        self.on_selection_change = callback
+
     def set_controls_height(self, height):
         """Set height of the top controls pane (vertical sash position)."""
         try:
@@ -286,34 +308,64 @@ class FilePanel:
         self.context_menu.add_separator()
 
     def _on_single_click(self, event):
-        """Handle single click - just select item, don't open."""
+        """Handle single click with Ctrl/Shift multi-select support."""
         self.context_menu.unpost()
 
         item = self.tree.identify_row(event.y)
         if not item:
             return
 
-        self.tree.selection_set(item)
+        ctrl = (event.state & 0x0004) != 0
+        shift = (event.state & 0x0001) != 0
 
-        if self.on_file_click:
-            values = self.tree.item(item, "values")
-            if not values:
-                return
-            name = values[0].replace("📁 ", "").replace("📄 ", "")
-            if not getattr(self, 'current_path', None):
-                return
-            full_path = os.path.join(self.current_path, name)
-            self.on_file_click(full_path)
-                    
+        if ctrl:
+            if self.tree.selection_includes(item):
+                self.tree.selection_remove(item)
+            else:
+                self.tree.selection_add(item)
+            self.tree.focus(item)
+            self._selection_anchor = item
+        elif shift:
+            anchor = self._selection_anchor or self.tree.focus()
+            if anchor and anchor != item:
+                all_items = self.tree.get_children("")
+                try:
+                    idx1 = all_items.index(anchor)
+                    idx2 = all_items.index(item)
+                except ValueError:
+                    idx1 = idx2 = -1
+                if idx1 >= 0 and idx2 >= 0:
+                    start, end = sorted((idx1, idx2))
+                    self.tree.selection_set(all_items[start:end + 1])
+            else:
+                self.tree.selection_set(item)
+                self._selection_anchor = item
+            self.tree.focus(item)
+        else:
+            self.tree.selection_set(item)
+            self.tree.focus(item)
+            self._selection_anchor = item
+            if self.on_file_click:
+                values = self.tree.item(item, "values")
+                if not values:
+                    return
+                name = values[0].replace("📁 ", "").replace("📄 ", "")
+                if not getattr(self, 'current_path', None):
+                    return
+                full_path = os.path.join(self.current_path, name)
+                self.on_file_click(full_path)
+
     def _on_right_click(self, event):
         """Handle right-click - show context menu."""
         # Close any existing menu first
         self.context_menu.unpost()
-        
-        # Select item under cursor
+
+        # Select item under cursor if not already selected
         item = self.tree.identify_row(event.y)
-        if item:
+        if item and not self.tree.selection_includes(item):
             self.tree.selection_set(item)
+        if item:
+            self.tree.focus(item)
             # Get item info
             values = self.tree.item(item, "values")
             if values:
@@ -323,14 +375,37 @@ class FilePanel:
                 finally:
                     self.context_menu.grab_release()
                     
+    def _selection_is_single_file(self):
+        """Return True if exactly one file is selected."""
+        selected = self.tree.selection()
+        if len(selected) != 1:
+            return False
+        path = self._resolve_single_path(selected[0])
+        return path and os.path.isfile(path)
+
+    def _resolve_single_path(self, iid):
+        """Resolve one tree item ID to a path."""
+        text = self.tree.item(iid, "text")
+        if text and os.path.isabs(text):
+            return text
+        values = self.tree.item(iid, "values")
+        if not values:
+            return None
+        name = values[0].replace("📁 ", "").replace("📄 ", "")
+        if getattr(self, 'current_path', None):
+            return os.path.join(self.current_path, name)
+        return None
+
     def _on_context_open(self):
         """Context menu: Open."""
         if self.on_context_menu:
-            self.on_context_menu("open", self._get_selected_item_path())
-            
+            selected = self.tree.selection()
+            if len(selected) == 1:
+                self.on_context_menu("open", self._get_selected_item_path())
+
     def _on_context_open_with(self):
         """Context menu: Open With."""
-        if self.on_context_menu:
+        if self.on_context_menu and self._selection_is_single_file():
             self.on_context_menu("open_with", self._get_selected_item_path())
             
     def _on_context_new_folder(self):
@@ -354,25 +429,51 @@ class FilePanel:
             self.on_context_menu("paste", self.current_path)
             
     def _on_context_rename(self):
-        """Context menu: Rename."""
-        if self.on_context_menu:
+        """Context menu: Rename (single selection only)."""
+        selected = self.tree.selection()
+        if self.on_context_menu and len(selected) == 1:
             self.on_context_menu("rename", self._get_selected_item_path())
-            
+
     def _on_context_remove(self):
-        """Context menu: Remove."""
+        """Context menu: Remove selected item(s)."""
         if self.on_context_menu:
-            self.on_context_menu("remove", self._get_selected_item_path())
+            selected = self.tree.selection()
+            if len(selected) > 1:
+                self.on_context_menu("remove", None)
+            else:
+                self.on_context_menu("remove", self._get_selected_item_path())
             
     def _on_context_copy_path(self):
-        """Context menu: Copy Path."""
-        if self.on_context_menu:
+        """Context menu: Copy Path (single selection only)."""
+        selected = self.tree.selection()
+        if self.on_context_menu and len(selected) == 1:
             self.on_context_menu("copy_path", self._get_selected_item_path())
-            
+
     def _on_context_properties(self):
-        """Context menu: Properties."""
-        if self.on_context_menu:
+        """Context menu: Properties (single selection only)."""
+        selected = self.tree.selection()
+        if self.on_context_menu and len(selected) == 1:
             self.on_context_menu("properties", self._get_selected_item_path())
             
+    def get_selected_item_paths(self):
+        """Get paths of all selected items (supporting multi-select)."""
+        selected = self.tree.selection()
+        if not selected:
+            return []
+        paths = []
+        for iid in selected:
+            text = self.tree.item(iid, "text")
+            if text and os.path.isabs(text):
+                paths.append(text)
+                continue
+            values = self.tree.item(iid, "values")
+            if not values:
+                continue
+            name = values[0].replace("📁 ", "").replace("📄 ", "")
+            if hasattr(self, 'current_path') and self.current_path:
+                paths.append(os.path.join(self.current_path, name))
+        return paths
+
     def _get_selected_item_path(self):
         """Get path of currently selected item.
 
@@ -407,24 +508,59 @@ class FilePanel:
         item = self.tree.focus()
         prev = self.tree.prev(item)
         if prev:
-            self.tree.selection_set(prev)
-            self.tree.focus(prev)
+            if event and (event.state & 0x0001):  # Shift held
+                self._shift_select_to(prev)
+                self._track_anchor()
+            else:
+                self.tree.selection_set(prev)
+                self.tree.focus(prev)
             self.tree.see(prev)
         return "break"
+
+    def _track_anchor(self, event=None):
+        """Update selection anchor for Shift selection."""
+        sel = self.tree.selection()
+        if sel:
+            self._selection_anchor = sel[0]
+
+    def _shift_select_to(self, item):
+        """Extend selection from anchor to item."""
+        anchor = self._selection_anchor or self.tree.focus()
+        if not anchor:
+            self.tree.selection_set(item)
+            self.tree.focus(item)
+            self._selection_anchor = item
+            return
+        all_items = self.tree.get_children("")
+        try:
+            idx1 = all_items.index(anchor)
+            idx2 = all_items.index(item)
+        except ValueError:
+            self.tree.selection_set(item)
+            self.tree.focus(item)
+            return
+        start, end = sorted((idx1, idx2))
+        self.tree.selection_set(all_items[start:end + 1])
+        self.tree.focus(item)
 
     def _on_key_down(self, event=None):
         """Move selection down."""
         item = self.tree.focus()
         next_item = self.tree.next(item)
         if next_item:
-            self.tree.selection_set(next_item)
-            self.tree.focus(next_item)
+            if event and (event.state & 0x0001):  # Shift held
+                self._shift_select_to(next_item)
+                self._track_anchor()
+            else:
+                self.tree.selection_set(next_item)
+                self.tree.focus(next_item)
             self.tree.see(next_item)
         return "break"
 
     def _on_key_return(self, event=None):
-        """Open selected item."""
-        if self.on_double_click:
+        """Open selected item(s) (only single selection)."""
+        selected = self.tree.selection()
+        if len(selected) == 1 and self.on_double_click:
             self.on_double_click(event)
         return "break"
 
@@ -435,17 +571,20 @@ class FilePanel:
         return "break"
 
     def _on_key_delete(self, event=None):
-        """Delete selected item."""
-        path = self._get_selected_item_path()
-        if path and self.on_context_menu:
-            self.on_context_menu("remove", path)
+        """Delete selected item(s)."""
+        selected = self.tree.selection()
+        if selected and self.on_context_menu:
+            if len(selected) > 1:
+                self.on_context_menu("remove", None)
+            else:
+                self.on_context_menu("remove", self._get_selected_item_path())
         return "break"
 
     def _on_key_rename(self, event=None):
-        """Rename selected item."""
-        path = self._get_selected_item_path()
-        if path and self.on_context_menu:
-            self.on_context_menu("rename", path)
+        """Rename selected item (single only)."""
+        selected = self.tree.selection()
+        if len(selected) == 1 and self.on_context_menu:
+            self.on_context_menu("rename", self._get_selected_item_path())
         return "break"
 
     def clear(self):

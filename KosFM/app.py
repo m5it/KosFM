@@ -291,6 +291,7 @@ class KosFMApp:
             on_change=self._on_filter_changed,
             on_recursive=self._on_recursive_search
         )
+        self.file_panel.set_selection_change_callback(self._update_status_for_selection)
         self.file_panel.bind_sash_change(self._on_right_sash_released)
         # Global keyboard shortcuts
         # Global keyboard shortcuts
@@ -492,6 +493,24 @@ class KosFMApp:
         else:
             self.status_bar.update(f"{total} items ({dir_count} folders, {file_count} files) - {base}")
 
+    def _update_status_for_selection(self):
+        """Update status bar to show selection count when items selected."""
+        selected = self.file_panel.tree.selection()
+        if len(selected) <= 1:
+            return
+        total_size = 0
+        valid = 0
+        for iid in selected:
+            path = self._resolve_item_path(iid)
+            if path and os.path.exists(path):
+                try:
+                    if os.path.isfile(path):
+                        total_size += os.path.getsize(path)
+                    valid += 1
+                except OSError:
+                    pass
+        self.status_bar.update(f"{len(selected)} items selected ({format_size(total_size)})")
+
     @handle_error
     def _refresh_file_view(self):
         """Refresh the file view (caches entries, applies current filter)."""
@@ -590,33 +609,52 @@ class KosFMApp:
             self.nav.go_to_parent()
 
     def _on_context_copy(self, path):
-        """Copy file/directory to clipboard."""
-        self._clipboard = path
-        self.status_bar.update(f"Copied: {os.path.basename(path)}")
-        
+        """Copy file/directory or multi-selection to clipboard."""
+        selected = self.file_panel.tree.selection()
+        if len(selected) > 1:
+            paths = [self._resolve_item_path(iid) for iid in selected]
+            paths = [p for p in paths if p]
+            self._clipboard = paths
+            self.status_bar.update(f"Copied {len(paths)} items")
+        elif path:
+            self._clipboard = path
+            self.status_bar.update(f"Copied: {os.path.basename(path)}")
+        else:
+            self.status_bar.update("Nothing selected")
+
     def _on_context_paste(self, dest_dir):
         """Paste from clipboard to destination."""
         if not self._clipboard:
             self.status_bar.update("Nothing to paste")
             return
-            
+
+        if isinstance(self._clipboard, list):
+            # Multi-selection paste
+            pasted = 0
+            skipped = 0
+            for src in self._clipboard:
+                if not os.path.exists(src):
+                    skipped += 1
+                    continue
+                dest_path = self._unique_dest_path(dest_dir, os.path.basename(src))
+                try:
+                    if os.path.isdir(src):
+                        shutil.copytree(src, dest_path)
+                    else:
+                        shutil.copy2(src, dest_path)
+                    pasted += 1
+                except Exception as e:
+                    self._show_error(f"Could not paste {src}: {e}")
+            self.status_bar.update(f"Pasted {pasted} items ({skipped} skipped)")
+            self._refresh_file_view()
+            return
+
         if not os.path.exists(self._clipboard):
             self.status_bar.update("Source file no longer exists")
             self._clipboard = None
             return
-            
-        src_name = os.path.basename(self._clipboard)
-        dest_path = os.path.join(dest_dir, src_name)
-        
-        # If destination exists, add number suffix
-        if os.path.exists(dest_path):
-            base, ext = os.path.splitext(src_name)
-            counter = 1
-            while os.path.exists(dest_path):
-                new_name = f"{base} ({counter}){ext}"
-                dest_path = os.path.join(dest_dir, new_name)
-                counter += 1
-        
+
+        dest_path = self._unique_dest_path(dest_dir, os.path.basename(self._clipboard))
         try:
             if os.path.isdir(self._clipboard):
                 shutil.copytree(self._clipboard, dest_path)
@@ -626,6 +664,19 @@ class KosFMApp:
             self._refresh_file_view()
         except Exception as e:
             self._show_error(f"Could not paste: {e}")
+
+    def _unique_dest_path(self, dest_dir, src_name):
+        """Generate unique destination path, adding suffix if needed."""
+        dest_path = os.path.join(dest_dir, src_name)
+        if not os.path.exists(dest_path):
+            return dest_path
+        base, ext = os.path.splitext(src_name)
+        counter = 1
+        while os.path.exists(dest_path):
+            new_name = f"{base} ({counter}){ext}"
+            dest_path = os.path.join(dest_dir, new_name)
+            counter += 1
+        return dest_path
             
     def _on_new_folder(self, target_dir=None):
         """Create a new folder in current directory."""
@@ -711,20 +762,50 @@ class KosFMApp:
             self._show_error(f"Could not rename: {e}")
             
     def _on_context_remove(self, path):
-        """Remove file or directory with confirmation."""
+        """Remove selected item(s) with confirmation."""
+        selected = self.file_panel.tree.selection()
+        if len(selected) > 1:
+            paths = [self._resolve_item_path(iid) for iid in selected]
+            paths = [p for p in paths if p]
+            if not paths:
+                return
+            response = messagebox.askyesno(
+                "Confirm Delete",
+                f"Are you sure you want to delete {len(paths)} selected items?\n\n"
+                f"This action cannot be undone."
+            )
+            if not response:
+                return
+            deleted = 0
+            failed = []
+            for p in paths:
+                try:
+                    if os.path.isdir(p):
+                        shutil.rmtree(p)
+                    else:
+                        os.remove(p)
+                    deleted += 1
+                except Exception as e:
+                    failed.append(f"{os.path.basename(p)}: {e}")
+            self.status_bar.update(f"Deleted {deleted} items")
+            self._refresh_file_view()
+            if failed:
+                self._show_error("Some items could not be deleted:\n" + "\n".join(failed))
+            return
+
         if not path:
             return
-            
+
         name = os.path.basename(path)
         is_dir = os.path.isdir(path)
-        
+
         item_type = "directory" if is_dir else "file"
-        response = messagebox.askyesno("Confirm Delete", 
+        response = messagebox.askyesno("Confirm Delete",
                                        f"Are you sure you want to delete {item_type} '{name}'?\n\n"
                                        f"This action cannot be undone.")
         if not response:
             return
-            
+
         try:
             if is_dir:
                 shutil.rmtree(path)

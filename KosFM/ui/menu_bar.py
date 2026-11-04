@@ -146,21 +146,23 @@ class MenuBar:
         """Show keyboard shortcuts dialog."""
         shortcuts = """Keyboard Shortcuts:
 
-Ctrl+R      Refresh current directory
+Ctrl+R / F5      Refresh current directory
 Ctrl+Q      Exit application
 Ctrl+N      New file
 Ctrl+Shift+N  New folder
 Ctrl+F      Focus search box
 Ctrl+D      Add current directory to bookmarks
-F5          Refresh current directory
 Esc         Clear search
 
 Navigation:
 Arrow Up / Down     Move selection in file list
+Shift + Arrow Up/Down   Extend selection
+Ctrl + Click        Toggle item selection
+Shift + Click       Select range
 Enter               Open selected file / folder
 Backspace           Go to parent directory
 F2                  Rename selected item
-Delete              Delete selected item
+Delete              Delete selected item(s)
 Double-click        Open folder
 
 Menu:

@@ -22,6 +22,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **File Details**: View file size, modification date, and type
 - **Resizable Panels**: Drag the divider to adjust panel widths and the right-panel vertical sash to adjust top-controls height
 - **Keyboard Navigation**: Arrow keys, Enter, Backspace, F2, Delete, F5
+- **Multi-Select**: Ctrl+Click / Shift+Click / Shift+Arrow for batch Copy, Paste, Remove
 - **Navigation**:
   - Click directories in tree to view contents
   - Double-click folders to navigate into them
@@ -160,12 +161,12 @@ python main.py
 | Open With... | Choose application to open file |
 | New Folder | Create a new folder in current directory |
 | New File | Create a new empty file in current directory |
-| Copy | Copy file/directory to clipboard |
+| Copy | Copy selected item(s) to clipboard |
 | Paste | Paste from clipboard to current directory |
-| Rename | Rename file or directory |
-| Remove | Delete file or directory (with confirmation) |
-| Copy Path | Copy full path to clipboard |
-| Properties | Show file details |
+| Rename | Rename file or directory (single selection) |
+| Remove | Delete selected item(s) with confirmation |
+| Copy Path | Copy full path to clipboard (single selection) |
+| Properties | Show file details (single selection) |
 
 ### Keyboard Shortcuts
 
@@ -179,10 +180,13 @@ python main.py
 | Ctrl+D | Add current directory to bookmarks |
 | Esc | Clear search and restore directory view |
 | Arrow Up/Down | Move selection in file list |
+| Shift + Arrow Up/Down | Extend selection |
+| Ctrl + Click | Toggle item selection |
+| Shift + Click | Select range |
 | Enter | Open selected file / folder |
 | Backspace | Go to parent directory |
 | F2 | Rename selected item |
-| Delete | Delete selected item |
+| Delete | Delete selected item(s) |
 
 ## Menu Bar
 

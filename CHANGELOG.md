@@ -169,6 +169,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - F2 renames selected item
   - Delete removes selected item
   - F5 / Ctrl+R refreshes current directory
+- **Multi-Select + Batch Operations**
+  - File tree switched to extended selection mode
+  - Ctrl+Click toggles items, Shift+Click selects ranges, Shift+Arrow extends selection
+  - Batch Copy, Paste, and Remove across multiple selected items
+  - Single-selection-only actions (Open, Open With, Rename, Properties, Copy Path) disabled for multi-selection
+  - Status bar shows selected count and total size
 
 ### Planned Features
 - File preview panel for images and text

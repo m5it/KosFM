@@ -1,7 +1,7 @@
 
 """
 Menu bar widget for KosFM.
-Creates File, View, and Help menus.
+Creates File, Edit, View, and Help menus.
 """
 
 import tkinter as tk
@@ -24,6 +24,7 @@ class MenuBar:
                 - toggle_status: Called for Show Status Bar
                 - show_shortcuts: Called for Keyboard Shortcuts
                 - show_about: Called for About
+                - focus_search: Called for Search / Filter
         """
         self.root = root
         self.handlers = handlers
@@ -38,16 +39,19 @@ class MenuBar:
         
         # Create menus
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
+        self.edit_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.view_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.help_menu = tk.Menu(self.menu_bar, tearoff=0)
-        
+
         # Add to menu bar
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
+        self.menu_bar.add_cascade(label="Edit", menu=self.edit_menu)
         self.menu_bar.add_cascade(label="View", menu=self.view_menu)
         self.menu_bar.add_cascade(label="Help", menu=self.help_menu)
         
         # Populate menus
         self._create_file_menu()
+        self._create_edit_menu()
         self._create_view_menu()
         self._create_help_menu()
         
@@ -69,19 +73,28 @@ class MenuBar:
         )
         self.root.bind("<Control-q>", lambda e: self.handlers.get('exit', lambda: None)())
         
+    def _create_edit_menu(self):
+        """Create Edit menu."""
+        self.edit_menu.add_command(
+            label="Search / Filter",
+            command=self.handlers.get('focus_search'),
+            accelerator="Ctrl+F"
+        )
+        self.root.bind("<Control-f>", lambda e: self.handlers.get('focus_search', lambda: None)())
+
     def _create_view_menu(self):
         """Create View menu."""
         self.show_hidden_var = tk.BooleanVar(value=False)
         self.show_status_var = tk.BooleanVar(value=True)
-        
+
         self.view_menu.add_checkbutton(
             label="Show Hidden Files",
             variable=self.show_hidden_var,
             command=self.handlers.get('toggle_hidden')
         )
-        
+
         self.view_menu.add_separator()
-        
+
         self.view_menu.add_checkbutton(
             label="Show Status Bar",
             variable=self.show_status_var,
@@ -118,6 +131,7 @@ File -> Refresh      Reload directory
 File -> Exit         Close application
 View -> Show Hidden Files    Toggle hidden files
 View -> Show Status Bar      Toggle status bar
+Edit -> Search       Focus search box
 """
         messagebox.showinfo("Keyboard Shortcuts", shortcuts)
         

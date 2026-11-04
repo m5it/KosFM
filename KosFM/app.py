@@ -7,6 +7,7 @@ import logging
 import os
 import sys
 import shutil
+import threading
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from pathlib import Path
@@ -18,6 +19,7 @@ from .utils.config_manager import ConfigManager
 from .utils.error_handler import handle_error
 from .utils.file_utils import format_size, format_time, get_file_type
 from .utils.platform_utils import get_root_directories
+from .utils.search import walk_search
 from .utils.xdg_mime import (
     get_mime_type,
     get_default_application,
@@ -58,6 +60,14 @@ class KosFMApp:
         
         self.current_path = None
         self._sash_save_timer = None
+
+        # Search state
+        self._cached_entries = []  # last scandir entries for filtering
+        self._filter_query = ""
+        self._filter_timer = None
+        self._search_thread = None
+        self._search_cancel = None
+        self._search_active = False  # True when showing recursive results
         
         # Create UI
         self.setup_ui()
@@ -186,6 +196,7 @@ class KosFMApp:
             'exit': self.root.destroy,
             'toggle_hidden': self._toggle_hidden_files,
             'toggle_status': self._toggle_status_bar,
+            'focus_search': self._focus_search,
         }
         self.menu_bar = MenuBar(self.root, handlers)
         self.menu_bar.get_show_hidden_var().set(self.config["view"]["show_hidden_files"])
@@ -213,6 +224,12 @@ class KosFMApp:
         self.file_panel.bind_up_button(self.nav.go_to_parent)
         self.file_panel.bind_refresh_button(self._refresh_file_view)
         self.file_panel.bind_path_entry(self.nav.on_path_entry)
+        self.file_panel.set_search_callbacks(
+            on_change=self._on_filter_changed,
+            on_recursive=self._on_recursive_search
+        )
+        # Escape clears search (window-level, but search entry binds it too)
+        self.root.bind("<Escape>", self._on_escape)
         
     def _create_status_bar(self):
         """Create status bar."""
@@ -225,54 +242,165 @@ class KosFMApp:
         logger.error("%s", message)
         messagebox.showerror("Error", message)
         
+    # ---- Search / filter ----
+
+    def _focus_search(self, event=None):
+        self.file_panel.focus_search()
+        return "break"
+
+    def _on_escape(self, event=None):
+        if self._search_active or self.file_panel.get_search_query():
+            self._cancel_search()
+            self.file_panel.clear_search()
+            self._refresh_file_view()
+
+    def _cancel_search(self):
+        if self._search_cancel:
+            self._search_cancel.set()
+        self._search_active = False
+        self._search_thread = None
+        self._search_cancel = None
+
+    def _on_filter_changed(self, query):
+        """Debounced inline filter for current directory."""
+        self._filter_query = query or ""
+        # Cancel any recursive search
+        if self._search_active:
+            self._cancel_search()
+        if self._filter_timer:
+            self.root.after_cancel(self._filter_timer)
+        # Small debounce so typing feels instant but not janky
+        self._filter_timer = self.root.after(150, self._apply_filter)
+
+    def _apply_filter(self):
+        self._filter_timer = None
+        if not self._search_active:
+            self._render_entries(self._cached_entries, self._filter_query)
+
+    def _on_recursive_search(self, query):
+        """Start recursive search under current_path."""
+        if not query or not self.current_path:
+            return
+        self._cancel_search()
+        self._filter_query = query
+        self._search_active = True
+        self.file_panel.clear()  # clear view before results
+        self.status_bar.update(f"Searching for '{query}' in {self.current_path} ...")
+
+        cancel = threading.Event()
+        self._search_cancel = cancel
+
+        def on_batch(batch):
+            # Schedule UI update on main thread
+            self.root.after(0, lambda b=batch: self._append_search_results(b, query))
+
+        def worker():
+            show_hidden = self.menu_bar.get_show_hidden_var().get()
+            total = walk_search(
+                self.current_path, query,
+                show_hidden=show_hidden,
+                cancel_event=cancel,
+                on_batch=on_batch,
+            )
+            self.root.after(0, lambda t=total: self._finish_search(t, query, cancelled=cancel.is_set()))
+
+        t = threading.Thread(target=worker, daemon=True)
+        self._search_thread = t
+        t.start()
+
+    def _append_search_results(self, batch, query):
+        if not self._search_active:
+            return
+        for item in batch:
+            name = item['name']
+            display_name = f"📁 {name}" if item['is_dir'] else f"📄 {name}"
+            size = "" if item['is_dir'] else format_size(item['size'])
+            modified = format_time(item['mtime'])
+            file_type = "Folder" if item['is_dir'] else get_file_type(
+                type('E', (), {'is_dir': lambda s, **kw: False, 'name': name})()
+            )
+            # Show relative path as type hint for recursive results
+            rel = os.path.relpath(item['path'], self.current_path) if self.current_path else item['path']
+            # Insert with full path stored in item text for navigation
+            iid = self.file_panel.insert_item(item['path'], display_name, size, modified, os.path.dirname(rel) or ".")
+            # Tag to allow navigation: we store full path
+            _ = iid
+        # Update count in status
+        count = len(self.file_panel.tree.get_children())
+        self.status_bar.update(f"Found {count} matches for '{query}' — {self.current_path} (recursive)")
+
+    def _finish_search(self, total, query, cancelled=False):
+        if not self._search_active and not cancelled:
+            return
+        if cancelled:
+            self.status_bar.update(f"Search cancelled — {len(self.file_panel.tree.get_children())} matches for '{query}'")
+        else:
+            self.status_bar.update(f"Found {total} matches for '{query}' in {self.current_path} (recursive)")
+        self._search_thread = None
+
+    def _render_entries(self, entries, query=""):
+        """Render entries to file panel, applying optional name filter."""
+        self.file_panel.clear()
+        if query:
+            entries = [e for e in entries if query.lower() in e.name.lower()]
+        entries_sorted = sorted(entries, key=lambda e: (not e.is_dir(), e.name.lower()))
+        file_count = 0
+        dir_count = 0
+        for entry in entries_sorted:
+            try:
+                stat = entry.stat(follow_symlinks=False)
+                name = entry.name
+                display_name = f"📁 {name}" if entry.is_dir() else f"📄 {name}"
+                size = format_size(stat.st_size) if not entry.is_dir() else ""
+                modified = format_time(stat.st_mtime)
+                file_type = get_file_type(entry)
+                self.file_panel.insert_item(name, display_name, size, modified, file_type)
+                if entry.is_dir():
+                    dir_count += 1
+                else:
+                    file_count += 1
+            except (OSError, PermissionError):
+                continue
+        total = file_count + dir_count
+        base = self.current_path or ""
+        if query:
+            shown = total
+            self.status_bar.update(f"{shown} / {len(self._cached_entries)} matches for '{query}' — {base}")
+            if shown == 0:
+                self.file_panel.insert_item("", f"No matches for '{query}'", "", "", "")
+        else:
+            self.status_bar.update(f"{total} items ({dir_count} folders, {file_count} files) - {base}")
+
     @handle_error
     def _refresh_file_view(self):
-        """Refresh the file view."""
+        """Refresh the file view (caches entries, applies current filter)."""
         try:
-            self.file_panel.clear()
-            
             if not self.current_path:
                 self.status_bar.update("No directory selected")
                 return
-                
+
+            # If a recursive search is active, cancel it and return to normal view
+            if self._search_active:
+                self._cancel_search()
+
             entries = []
             with os.scandir(self.current_path) as it:
                 for entry in it:
                     if not self.menu_bar.get_show_hidden_var().get() and entry.name.startswith('.'):
                         continue
                     entries.append(entry)
-                    
-            entries.sort(key=lambda e: (not e.is_dir(), e.name.lower()))
-            
-            file_count = 0
-            dir_count = 0
-            
-            for entry in entries:
-                try:
-                    stat = entry.stat(follow_symlinks=False)
-                    name = entry.name
-                    display_name = f"📁 {name}" if entry.is_dir() else f"📄 {name}"
-                    size = format_size(stat.st_size) if not entry.is_dir() else ""
-                    modified = format_time(stat.st_mtime)
-                    file_type = get_file_type(entry)
-                    
-                    self.file_panel.insert_item(name, display_name, size, modified, file_type)
-                    
-                    if entry.is_dir():
-                        dir_count += 1
-                    else:
-                        file_count += 1
-                        
-                except (OSError, PermissionError):
-                    continue
-                    
-            total = file_count + dir_count
-            self.status_bar.update(f"{total} items ({dir_count} folders, {file_count} files) - {self.current_path}")
-            
+
+            self._cached_entries = entries
+            self._render_entries(entries, self._filter_query)
+
         except PermissionError:
+            self._cached_entries = []
+            self.file_panel.clear()
             self.file_panel.insert_item("", "Access Denied", "", "", "")
             self.status_bar.update("Permission denied")
         except OSError as e:
+            self._cached_entries = []
+            self.file_panel.clear()
             self.file_panel.insert_item("", f"Error: {e}", "", "", "")
             self.status_bar.update(f"Error: {e}")
                 
@@ -438,23 +566,39 @@ class KosFMApp:
         else:
             self.status_bar.hide()
             
+    def _resolve_selected_path(self):
+        """Resolve selected item to full filesystem path, handling search results."""
+        item = self.file_panel.get_selection()
+        if not item:
+            return None
+        iid = item[0]
+        # In recursive search mode, Treeview text holds the full path
+        text = self.file_panel.tree.item(iid, "text")
+        if text and os.path.isabs(text):
+            return text
+        values = self.file_panel.get_item_values(iid)
+        if not values:
+            return None
+        display_name = values[0]
+        name = display_name.replace("📁 ", "").replace("📄 ", "")
+        if not name:
+            return None
+        return os.path.join(self.current_path, name) if self.current_path else None
+
     def _on_file_double_click(self, event):
         """Handle double-click on file."""
         try:
-            item = self.file_panel.get_selection()
-            if not item:
+            full_path = self._resolve_selected_path()
+            if not full_path:
                 return
-            values = self.file_panel.get_item_values(item[0])
-            if not values:
-                return
-            display_name = values[0]
-            name = display_name.replace("📁 ", "").replace("📄 ", "")
-            full_path = os.path.join(self.current_path, name)
             if os.path.isdir(full_path):
+                # Exit search view when navigating via double-click
+                if self._search_active:
+                    self._cancel_search()
+                    self.file_panel.clear_search()
                 self.status_bar.update(f"Opening: {full_path}")
                 self.nav.navigate_to(full_path)
             else:
-                # Open file on double-click
                 self._open_file(full_path)
         except Exception as e:
             self._show_error(f"Double-click error: {e}")

@@ -27,11 +27,16 @@ class NavigationManager:
         if not os.path.isdir(path):
             self.app.status_bar.update(f"Invalid directory: {path}")
             return
-            
-        self.app.status_bar.update(f"Loading: {path}")
-        self.app.current_path = path
+
+        # Reset search/filter when changing directory
+        self.app._cancel_search()
+        self.app._filter_query = ""
+        self.app.file_panel.clear_search()
         self.app.file_panel.set_path(path)
         self.app.file_panel.set_current_path(path)
+
+        self.app.status_bar.update(f"Loading: {path}")
+        self.app.current_path = path
         self.app._refresh_file_view()
         
     def go_to_parent(self):

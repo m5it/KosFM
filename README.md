@@ -32,6 +32,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **Icons**: Visual distinction with emoji icons (📁 folders, 📄 files)
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 - **Error Handling**: Graceful handling of permission errors and inaccessible directories
+- **Search / Filter**: Live filter in folder and recursive subdirectory search
 - **Status Bar**: Shows item count and current path
 
 ## Screenshots
@@ -102,6 +103,7 @@ KosFM/
 │       ├── error_handler.py  # Error handling
 │       ├── file_utils.py     # File formatting
 │       ├── platform_utils.py # Platform-specific code
+│       ├── search.py         # Filter / recursive search
 │       └── xdg_mime.py       # Linux MIME type handling
 ├── README.md               # This file
 └── CHANGELOG.md            # Version history
@@ -165,6 +167,8 @@ python main.py
 |----------|--------|
 | Ctrl+R | Refresh current directory |
 | Ctrl+Q | Exit application |
+| Ctrl+F | Focus search/filter box |
+| Esc | Clear search and restore directory view |
 
 ## Menu Bar
 
@@ -173,6 +177,11 @@ python main.py
 |--------|----------|-------------|
 | Refresh | Ctrl+R | Reload current directory |
 | Exit | Ctrl+Q | Close application |
+
+### Edit Menu
+| Option | Shortcut | Description |
+|--------|----------|-------------|
+| Search / Filter | Ctrl+F | Focus search box |
 
 ### View Menu
 | Option | Description |
@@ -219,7 +228,7 @@ This structure makes the code easy to maintain, test, and extend.
 ## Future Enhancements
 
 - [ ] File preview panel
-- [ ] Search functionality
+- [x] Search functionality
 - [ ] Bookmarks/favorites
 - [ ] Dark theme
 - [ ] Additional keyboard shortcuts

@@ -144,9 +144,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Search / Filter**
+  - Live filter bar in the file panel (substring, case-insensitive)
+  - Recursive search across subdirectories with threaded walker
+  - Cancelable search, status updates, and double-click navigation from results
+  - Keyboard shortcut `Ctrl+F` and Edit menu entry
+  - Escape key clears search and restores normal directory view
+
 ### Planned Features
 - File preview panel for images and text
-- Search functionality across directories
 - Bookmarks and favorites
 - Dark theme support
 - Additional keyboard shortcuts (F5 refresh, Ctrl+C copy, etc.)

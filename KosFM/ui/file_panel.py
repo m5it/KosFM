@@ -40,11 +40,14 @@ class FilePanel:
         
         # Configure grid
         self.frame.columnconfigure(0, weight=1)
-        self.frame.rowconfigure(1, weight=1)
+        self.frame.rowconfigure(2, weight=1)
         
         # Create path bar
         self._create_path_bar()
-        
+
+        # Create search bar
+        self._create_search_bar()
+
         # Create file tree
         self._create_file_tree()
         
@@ -107,7 +110,118 @@ class FilePanel:
         self.tree.bind("<Button-1>", self._on_single_click)
         self.tree.bind("<Button-3>", self._on_right_click)  # Right-click
         self.tree.bind("<Control-Button-1>", self._on_right_click)  # Ctrl+click (macOS)
+
+        # Search entry keyboard shortcuts (must not propagate when focused)
+        self.search_entry.bind("<Escape>", self._on_search_escape)
         
+    def _create_search_bar(self):
+        """Create the search/filter bar."""
+        self.search_frame = ttk.Frame(self.frame)
+        self.search_frame.grid(row=1, column=0, sticky="ew", pady=(0, 5))
+        self.search_frame.columnconfigure(1, weight=1)
+
+        ttk.Label(self.search_frame, text="🔍").grid(row=0, column=0, padx=(0, 4))
+
+        self.search_var = tk.StringVar()
+        self.search_entry = ttk.Entry(self.search_frame, textvariable=self.search_var)
+        self.search_entry.grid(row=0, column=1, sticky="ew")
+
+        self.search_clear_btn = ttk.Button(self.search_frame, text="✕", width=3,
+                                           command=self._on_search_clear)
+        self.search_clear_btn.grid(row=0, column=2, padx=(4, 0))
+
+        self.recursive_var = tk.BooleanVar(value=False)
+        self.recursive_check = ttk.Checkbutton(self.search_frame, text="Recursive",
+                                               variable=self.recursive_var,
+                                               command=self._on_recursive_toggle)
+        self.recursive_check.grid(row=0, column=3, padx=(6, 0))
+
+        self.search_placeholder = "Filter in folder..."
+        self._search_has_placeholder = False
+        self._set_search_placeholder()
+
+        self.search_entry.bind("<FocusIn>", self._on_search_focus_in)
+        self.search_entry.bind("<FocusOut>", self._on_search_focus_out)
+        self.search_entry.bind("<Escape>", self._on_search_escape)
+
+        # Callbacks set by app
+        self._on_search_change = None
+        self._on_search_recursive = None
+        self.search_var.trace_add("write", self._on_search_var_changed)
+
+    def _set_search_placeholder(self):
+        self.search_entry.insert(0, self.search_placeholder)
+        self.search_entry.configure(foreground="gray")
+        self._search_has_placeholder = True
+
+    def _clear_search_placeholder(self):
+        if self._search_has_placeholder:
+            self.search_var.set("")
+            self.search_entry.configure(foreground="")
+            self._search_has_placeholder = False
+
+    def _on_search_focus_in(self, event=None):
+        self._clear_search_placeholder()
+
+    def _on_search_focus_out(self, event=None):
+        if not self.search_var.get():
+            self._set_search_placeholder()
+
+    def _on_search_escape(self, event=None):
+        self.clear_search()
+        return "break"
+
+    def _on_search_clear(self):
+        self.clear_search()
+
+    def _on_recursive_toggle(self):
+        if self.recursive_var.get():
+            # Trigger recursive search if there's a query
+            q = self.get_search_query()
+            if q and self._on_search_recursive:
+                self._on_search_recursive(q)
+        else:
+            # Back to filter mode
+            q = self.get_search_query()
+            if self._on_search_change:
+                self._on_search_change(q)
+
+    def _on_search_var_changed(self, *args):
+        if self._search_has_placeholder:
+            return
+        if self.recursive_var.get():
+            return  # recursive mode triggered explicitly, not on keystroke
+        if self._on_search_change:
+            self._on_search_change(self.search_var.get())
+
+    def get_search_query(self):
+        if self._search_has_placeholder:
+            return ""
+        return self.search_var.get().strip()
+
+    def clear_search(self):
+        self.recursive_var.set(False)
+        self.search_var.set("")
+        self.search_entry.configure(foreground="")
+        self._search_has_placeholder = False
+        self._set_search_placeholder()
+        # notify to restore full listing
+        if self._on_search_change:
+            self._on_search_change("")
+
+    def is_recursive(self):
+        return self.recursive_var.get()
+
+    def set_search_callbacks(self, on_change, on_recursive):
+        """Register search callbacks from app."""
+        self._on_search_change = on_change
+        self._on_search_recursive = on_recursive
+
+    def focus_search(self):
+        self.search_entry.focus_set()
+        if self._search_has_placeholder:
+            self._clear_search_placeholder()
+
     def _create_context_menu(self):
         """Create right-click context menu."""
         self.context_menu = tk.Menu(self.tree, tearoff=0)
@@ -201,11 +315,19 @@ class FilePanel:
             self.on_context_menu("properties", self._get_selected_item_path())
             
     def _get_selected_item_path(self):
-        """Get path of currently selected item."""
+        """Get path of currently selected item.
+
+        In recursive search mode the item's Treeview text holds the full path.
+        """
         item = self.tree.selection()
         if not item:
             return None
-        values = self.tree.item(item[0], "values")
+        iid = item[0]
+        # Recursive search stores absolute path in the Treeview text field
+        text = self.tree.item(iid, "text")
+        if text and os.path.isabs(text):
+            return text
+        values = self.tree.item(iid, "values")
         if not values:
             return None
         name = values[0].replace("📁 ", "").replace("📄 ", "")

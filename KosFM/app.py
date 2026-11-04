@@ -1079,13 +1079,10 @@ class KosFMApp:
         finally:
             self._preview_sash_save_timer = None
 
-    def _resolve_selected_path(self):
-        """Resolve selected item to full filesystem path, handling search results."""
-        item = self.file_panel.get_selection()
-        if not item:
+    def _resolve_item_path(self, iid):
+        """Resolve a tree item id to full filesystem path."""
+        if not iid:
             return None
-        iid = item[0]
-        # In recursive search mode, Treeview text holds the full path
         text = self.file_panel.tree.item(iid, "text")
         if text and os.path.isabs(text):
             return text
@@ -1097,6 +1094,13 @@ class KosFMApp:
         if not name:
             return None
         return os.path.join(self.current_path, name) if self.current_path else None
+
+    def _resolve_selected_path(self):
+        """Resolve selected item to full filesystem path, handling search results."""
+        item = self.file_panel.get_selection()
+        if not item:
+            return None
+        return self._resolve_item_path(item[0])
 
     def _on_file_double_click(self, event):
         """Handle double-click on file."""

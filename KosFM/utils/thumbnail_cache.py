@@ -56,7 +56,14 @@ class ThumbnailCache:
             return None
         if not is_image_file(path):
             return None
+        # Try Pillow if available; otherwise fallback to tk PhotoImage for PNG/GIF
         if not pillow_available():
+            try:
+                # Tk handles PNG/GIF/PPM without Pillow
+                if path.lower().endswith(('.png', '.gif')):
+                    return tk.PhotoImage(file=path)
+            except Exception:
+                pass
             return None
 
         with self._lock:

@@ -94,15 +94,16 @@ class PreviewPanel:
         self.info_var.set(f"{file_type}\n{size}\n{modified}")
 
         if is_image_file(path):
-            if pillow_available():
-                if self._show_image(path):
-                    return
-                self._hide_image()
-                self._set_content("[Image — thumbnail failed]")
+            # Always try image preview via ThumbnailCache (it has tk fallback)
+            if self._show_image(path):
                 return
+            # Fallback when no preview possible
             self._hide_image()
             ext = os.path.splitext(path)[1].upper().lstrip(".") or "Image"
-            self._set_content(f"{ext} image — install Pillow for preview")
+            if pillow_available():
+                self._set_content(f"{ext} image — thumbnail failed")
+            else:
+                self._set_content(f"{ext} image — install Pillow for better preview\n{path}\n{size}")
             return
 
         self._hide_image()

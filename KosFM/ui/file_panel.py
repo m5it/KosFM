@@ -97,9 +97,19 @@ class FilePanel:
         self.refresh_btn.grid(row=0, column=2, padx=(5, 0))
         
     def _create_file_tree(self):
-        """Create the file listing tree inside a horizontal paned window."""
+        """Create the file listing tree inside a vertical paned window."""
         self.h_paned = ttk.PanedWindow(self.tree_frame_container, orient="vertical")
         self.h_paned.pack(fill="both", expand=True)
+
+        # Make sash grabbable (wider handle)
+        try:
+            self.h_paned.configure(sashwidth=6, sashpadding=2)
+        except Exception:
+            pass
+        try:
+            self.v_paned.configure(sashwidth=6, sashpadding=2)
+        except Exception:
+            pass
 
         tree_frame = ttk.Frame(self.h_paned)
         tree_frame.columnconfigure(0, weight=1)
@@ -368,11 +378,17 @@ class FilePanel:
         except Exception:
             pass
 
-    def set_preview_height(self, height):
-        """Set the preview pane height (horizontal sash position)."""
+    def set_preview_height(self, preview_height):
+        """Set preview pane to desired height (file list = total - preview)."""
         try:
             if self.h_paned.winfo_exists():
-                self.h_paned.sashpos(0, height)
+                total = self.h_paned.winfo_height()
+                if total > 50:
+                    # sashpos is position of file list bottom
+                    self.h_paned.sashpos(0, total - preview_height)
+                else:
+                    # fallback: schedule retry
+                    self.h_paned.after(100, lambda: self.set_preview_height(preview_height))
         except Exception:
             pass
 
@@ -380,7 +396,9 @@ class FilePanel:
         """Return current preview pane height."""
         try:
             if self.h_paned.winfo_exists():
-                return self.h_paned.sashpos(0)
+                total = self.h_paned.winfo_height()
+                sash = self.h_paned.sashpos(0)
+                return max(0, total - sash) if total else None
         except Exception:
             pass
         return None

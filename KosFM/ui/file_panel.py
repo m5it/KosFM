@@ -192,7 +192,7 @@ class FilePanel:
     def _create_preview_panel(self):
         """Create the preview panel below the file tree."""
         self.preview_panel = PreviewPanel(self.h_paned)
-        self.h_paned.add(self.preview_panel.frame, weight=0)
+        self.h_paned.add(self.preview_panel.frame, weight=1)
 
     def _create_search_bar(self):
         """Create the search/filter bar."""

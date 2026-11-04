@@ -48,6 +48,7 @@ class PreviewPanel:
         self.info_label.grid(row=0, column=0, sticky="nw")
 
         self.fit_preview_var = tk.BooleanVar(value=True)
+        self._fit_mode = True
         self.fit_preview_check = ttk.Checkbutton(
             self.info_frame,
             text="Fit to panel",
@@ -188,10 +189,10 @@ class PreviewPanel:
                     img = img.convert("RGBA")
                 except Exception:
                     img = img.convert("RGB")
-            # Determine max size based on frame and fit mode
-            max_w = max(64, self.frame.winfo_width() - 10)
-            max_h = max(64, self.frame.winfo_height() - 80)
-            if not self._fit_mode:
+            if self._fit_mode:
+                max_w = max(64, self.frame.winfo_width() - 10)
+                max_h = max(64, self.frame.winfo_height() - 80)
+            else:
                 # "Actual size" mode but still capped to avoid huge preview
                 max_w = max(64, min(800, img.width))
                 max_h = max(64, min(800, img.height))
@@ -208,14 +209,17 @@ class PreviewPanel:
 
     def _on_parent_configure(self, event=None):
         """Re-scale current image when preview panel is resized."""
-        if self._last_image_path and self._current_image:
-            # Debounce: schedule resize after user stops dragging
-            if hasattr(self, '_resize_after_id'):
-                try:
-                    self.frame.after_cancel(self._resize_after_id)
-                except Exception:
-                    pass
-            self._resize_after_id = self.frame.after(150, lambda: self.show_path(self._last_image_path))
+        if not self._last_image_path or not self._current_image:
+            return
+        if not self._fit_mode:
+            return  # only auto-resize in fit mode
+        # Debounce: schedule resize after user stops dragging
+        if hasattr(self, '_resize_after_id'):
+            try:
+                self.frame.after_cancel(self._resize_after_id)
+            except Exception:
+                pass
+        self._resize_after_id = self.frame.after(150, lambda: self.show_path(self._last_image_path))
 
     def _hide_image(self):
         """Hide image preview and restore text widget."""

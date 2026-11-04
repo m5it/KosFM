@@ -3,9 +3,11 @@ Configuration file for KosFM Application.
 Contains constants, settings, and default values.
 """
 
+from . import __version__ as _pkg_version
+
 # Application Information
 APP_NAME = "KosFM"
-APP_VERSION = "1.1.0"
+APP_VERSION = _pkg_version
 AUTHOR = "KosFM Team"
 
 # Window Settings

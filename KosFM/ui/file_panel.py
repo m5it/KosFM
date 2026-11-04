@@ -9,7 +9,6 @@ import tkinter as tk
 from tkinter import ttk
 
 from ..config import FILE_COLUMNS, PANEL_PADDING
-from ..utils.file_opener import open_file_default
 
 
 class FilePanel:
@@ -125,32 +124,23 @@ class FilePanel:
 
     def _on_single_click(self, event):
         """Handle single click - just select item, don't open."""
-        # Close context menu if open
         self.context_menu.unpost()
-        
+
         item = self.tree.identify_row(event.y)
         if not item:
             return
-            
-        # Select the item
+
         self.tree.selection_set(item)
-        
-        # Call the file click callback if set (for custom handling)
+
         if self.on_file_click:
             values = self.tree.item(item, "values")
-            if values:
-                name = values[0].replace("📁 ", "").replace("📄 ", "")
-                if hasattr(self, 'current_path') and self.current_path:
-                    full_path = os.path.join(self.current_path, name)
-                    self.on_file_click(full_path)
+            if not values:
+                return
+            name = values[0].replace("📁 ", "").replace("📄 ", "")
+            if not getattr(self, 'current_path', None):
+                return
             full_path = os.path.join(self.current_path, name)
-            if os.path.isfile(full_path):
-                # It's a file - open it
-                if self.on_file_click:
-                    self.on_file_click(full_path)
-                else:
-                    # Default behavior: open with system default
-                    open_file_default(full_path)
+            self.on_file_click(full_path)
                     
     def _on_right_click(self, event):
         """Handle right-click - show context menu."""

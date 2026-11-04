@@ -3,12 +3,15 @@ Main application module for KosFM.
 Wires together all UI components and utilities.
 """
 
+import logging
 import os
 import sys
 import shutil
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from .config import APP_NAME, WINDOW_SIZE, MIN_WINDOW_SIZE, TREE_WIDTH, DEFAULT_PATH
 from .utils.config_manager import ConfigManager
@@ -136,9 +139,9 @@ class KosFMApp:
                 self.config["panel"] = {}
             self.config["panel"]["left_width"] = sash_pos
             self.config_manager.save_config(self.config)
-            print(f"Saved panel width: {sash_pos}")
+            logger.debug("Saved panel width: %s", sash_pos)
         except Exception as e:
-            print(f"Could not save sash position: {e}")
+            logger.debug("Could not save sash position: %s", e)
         finally:
             self._sash_save_timer = None
         
@@ -172,9 +175,9 @@ class KosFMApp:
         """Restore sash position after window is rendered."""
         try:
             self.paned_window.sashpos(0, width)
-            print(f"Restored panel width: {width}")
+            logger.debug("Restored panel width: %s", width)
         except Exception as e:
-            print(f"Could not restore sash position: {e}")
+            logger.debug("Could not restore sash position: %s", e)
         
     def _create_menu_bar(self):
         """Create menu bar with handlers."""
@@ -219,7 +222,7 @@ class KosFMApp:
             
     def _show_error(self, message):
         """Show error message."""
-        print(f"Error: {message}")
+        logger.error("%s", message)
         messagebox.showerror("Error", message)
         
     @handle_error

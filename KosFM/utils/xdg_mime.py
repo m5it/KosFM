@@ -4,11 +4,15 @@ XDG MIME integration for KosFM.
 Handles MIME type detection and application associations on Linux.
 """
 
+import logging
 import os
 import re
+import shlex
 import subprocess
 from pathlib import Path
 from configparser import ConfigParser
+
+logger = logging.getLogger(__name__)
 
 
 def get_mime_type(file_path):
@@ -80,25 +84,25 @@ def find_applications_for_mime_type(mime_type):
         Path.home() / '.local' / 'share' / 'applications',
     ]
     
-    print(f"DEBUG: Looking for apps for MIME type: {mime_type}")
-    
+    logger.debug("Looking for apps for MIME type: %s", mime_type)
+
     for desktop_dir in desktop_dirs:
         if not desktop_dir.exists():
-            print(f"DEBUG: Directory does not exist: {desktop_dir}")
+            logger.debug("Directory does not exist: %s", desktop_dir)
             continue
-            
-        print(f"DEBUG: Scanning {desktop_dir}")
+
+        logger.debug("Scanning %s", desktop_dir)
         desktop_files = list(desktop_dir.glob('*.desktop'))
-        print(f"DEBUG: Found {len(desktop_files)} .desktop files")
-        
+        logger.debug("Found %d .desktop files", len(desktop_files))
+
         for desktop_file in desktop_files:
             app_info = parse_desktop_file(desktop_file)
             if app_info:
-                print(f"DEBUG: Checking {desktop_file.name}: mime_types={app_info.get('mime_types', [])}")
+                logger.debug("Checking %s: mime_types=%s", desktop_file.name, app_info.get('mime_types', []))
                 if mime_type_matches(mime_type, app_info.get('mime_types', [])):
                     app_info['desktop_file'] = desktop_file.name
                     apps.append(app_info)
-                    print(f"DEBUG: -> MATCH: {app_info['name']}")
+                    logger.debug("-> MATCH: %s", app_info['name'])
                 
     # Remove duplicates
     seen = set()
@@ -108,7 +112,7 @@ def find_applications_for_mime_type(mime_type):
             seen.add(app['desktop_file'])
             unique_apps.append(app)
             
-    print(f"DEBUG: Total matching apps: {len(unique_apps)}")
+    logger.debug("Total matching apps: %d", len(unique_apps))
     return unique_apps
 
 
@@ -134,7 +138,7 @@ def parse_desktop_file(desktop_path):
         config.read(desktop_path)
         
         if 'Desktop Entry' not in config:
-            print(f"DEBUG: No [Desktop Entry] in {desktop_path.name}")
+            logger.debug("No [Desktop Entry] in %s", desktop_path.name)
             return None
             
         entry = config['Desktop Entry']
@@ -161,7 +165,7 @@ def parse_desktop_file(desktop_path):
         # Parse MimeType field
         mime_types = [m.strip() for m in mime_types_str.split(';') if m.strip()]
         
-        print(f"DEBUG: Parsed {desktop_path.name}: name={name}, type={app_type}, mime_types={mime_types}")
+        logger.debug("Parsed %s: name=%s, type=%s, mime_types=%s", desktop_path.name, name, app_type, mime_types)
         
         return {
             'name': name,
@@ -171,7 +175,7 @@ def parse_desktop_file(desktop_path):
         }
         
     except Exception as e:
-        print(f"DEBUG: Error parsing {desktop_path}: {e}")
+        logger.debug("Error parsing %s: %s", desktop_path, e)
         return None
 
 
@@ -179,30 +183,42 @@ def launch_application(file_path, app_info):
     """Launch a file with a specific application."""
     if not app_info or 'exec' not in app_info:
         return False
-        
+
     exec_cmd = app_info['exec']
-    cmd = exec_cmd
-    
-    # Replace field codes
-    if '%F' in cmd:
-        cmd = cmd.replace('%F', file_path)
-    elif '%f' in cmd:
-        cmd = cmd.replace('%f', file_path)
-    elif '%U' in cmd:
-        cmd = cmd.replace('%U', file_path)
-    elif '%u' in cmd:
-        cmd = cmd.replace('%u', file_path)
-    else:
-        cmd = f"{cmd} {file_path}"
-        
-    # Remove other field codes
-    cmd = re.sub(r'%\w', '', cmd)
-    cmd = ' '.join(cmd.split())
-    
+    # Remove unsupported field codes before parsing
+    exec_cmd = re.sub(r'%(?![fFuU])\w', '', exec_cmd)
+    exec_cmd = ' '.join(exec_cmd.split())
+
     try:
-        subprocess.Popen(cmd, shell=True, 
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL)
+        args = shlex.split(exec_cmd)
+    except ValueError:
+        return False
+
+    if not args:
+        return False
+
+    quoted_path = file_path
+    expanded = []
+    replaced = False
+    for token in args:
+        if '%F' in token or '%f' in token or '%U' in token or '%u' in token:
+            expanded.append(token.replace('%F', quoted_path).replace('%f', quoted_path)
+                            .replace('%U', quoted_path).replace('%u', quoted_path))
+            replaced = True
+        else:
+            expanded.append(token)
+
+    if not replaced:
+        expanded.append(quoted_path)
+
+    # Remove any remaining field codes
+    expanded = [re.sub(r'%\w', '', t) for t in expanded]
+    expanded = [t for t in expanded if t]
+
+    try:
+        subprocess.Popen(expanded,
+                         stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL)
         return True
     except Exception:
         return False

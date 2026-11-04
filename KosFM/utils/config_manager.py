@@ -3,6 +3,7 @@ Configuration manager for KosFM.
 Handles save/load of window state and user preferences.
 """
 
+import copy
 import json
 from pathlib import Path
 
@@ -28,7 +29,8 @@ class ConfigManager:
             "view": {
                 "show_hidden_files": False,
                 "show_status_bar": True
-            }
+            },
+            "mime_apps": {}
         }
         
     def ensure_config_dir(self):
@@ -45,12 +47,16 @@ class ConfigManager:
         try:
             with open(self.config_file, 'r') as f:
                 config = json.load(f)
-                # Merge with defaults to ensure all keys exist
-                merged = self.default_config.copy()
-                merged.update(config)
+                # Deep merge with defaults to ensure all keys exist
+                merged = copy.deepcopy(self.default_config)
+                for key, value in config.items():
+                    if isinstance(value, dict) and isinstance(merged.get(key), dict):
+                        merged[key].update(value)
+                    else:
+                        merged[key] = value
                 return merged
         except (json.JSONDecodeError, IOError):
-            return self.default_config.copy()
+            return copy.deepcopy(self.default_config)
             
     def save_config(self, config):
         """Save configuration to JSON file."""

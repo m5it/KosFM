@@ -32,7 +32,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **Persist Last Directory**: Reopen the last folder on startup
 - **Smart Preview Height**: Defaults to 30% of screen height
 - **Navigation**:
-  - Click directories in tree to view contents
+  - Click directories in tree to view contents; selected folder stays highlighted
   - Double-click folders to navigate into them
   - "Up" button to go to parent directory
   - Path bar for direct navigation

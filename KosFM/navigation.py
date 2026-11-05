@@ -35,13 +35,29 @@ class NavigationManager:
         self.app.file_panel.set_path(path)
         self.app.file_panel.set_current_path(path)
 
-        # Highlight bookmark if path is bookmarked
+        # Highlight bookmark if the navigated path is bookmarked, but don't
+        # clear a normal folder selection otherwise (preserves the left-tree
+        # highlight so users can see which directory is open).
         if hasattr(self.app, 'tree_panel') and self.app.tree_panel:
-            self.app.tree_panel.tree.selection_set(())
+            selected = self.app.tree_panel.tree.selection()
+            selected_iid = selected[0] if selected else None
+            selected_path = (self.app.tree_panel.get_item_path(selected_iid)
+                             if selected_iid else "")
+            is_bookmark_selected = (selected_iid and
+                                    self.app.tree_panel.is_bookmark_node(selected_iid))
+
+            match = None
             for iid, bpath in self.app.tree_panel._bookmarks.items():
                 if os.path.normpath(bpath) == os.path.normpath(path):
-                    self.app.tree_panel.tree.selection_set(iid)
+                    match = iid
                     break
+
+            if match:
+                self.app.tree_panel.tree.selection_set(match)
+            elif is_bookmark_selected:
+                # Navigated away from a bookmarked location to a non-bookmark;
+                # clear the stale bookmark highlight.
+                self.app.tree_panel.tree.selection_set(())
 
         self.app.status_bar.update(f"Loading: {path}")
         self.app.current_path = path

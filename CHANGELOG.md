@@ -235,6 +235,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+### v1.16.4 (2026-11-05)
+- 🐛 **Fixed tree selection regression**: Clicking a folder in the left directory tree now keeps the folder highlighted and reliably shows its contents on the right
+- 🐛 **Preserve left-tree highlight**: Navigating to a non-bookmarked directory no longer clears the selected tree item; bookmarked paths still highlight their bookmark entry
+
 ### v1.4.0 (2026-07-09)
 - ✨ **File Operations**: Copy, Paste, Rename, Remove
 - ✨ **Panel Width Persistence**: Auto-save on resize

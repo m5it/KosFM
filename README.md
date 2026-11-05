@@ -4,7 +4,7 @@
 A simple, cross-platform file manager built with Python and tkinter. Features a dual-pane interface with a resizable directory tree on the left and file listing on the right. Now with Linux desktop integration via xdg-mime!
 
 ![Python Version](https://img.shields.io/badge/python-3.6+-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+![License](https://img.shields.io/badge/license-Modified%20Apache%202.0-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-lightgrey.svg)
 
 ## Features
@@ -278,7 +278,9 @@ Contributions are welcome! Please feel free to submit issues or pull requests.
 
 ## License
 
-This project is open source and available under the MIT License.
+Copyright 2026 Blaz Kos — Licensed under the **Modified Apache License, Version 2.0**. See [LICENSE](LICENSE) for full text.
+
+Commercial use requires written notification to `w4d4f4k@gmail.com` within 30 days (include use case, user count, deployment, contact) and payment of a fee invoiced by the licensor. Audit rights apply — see LICENSE for details.
 
 ## Changelog
 

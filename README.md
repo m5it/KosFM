@@ -30,6 +30,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **Image Thumbnails**: Optional Pillow-based thumbnails in the file list
 - **SSHFS Remote Mounts**: Mount remote directories via system `sshfs`
 - **Persist Last Directory**: Reopen the last folder on startup
+- **Smart Preview Height**: Defaults to 30% of screen height
 - **Navigation**:
   - Click directories in tree to view contents
   - Double-click folders to navigate into them

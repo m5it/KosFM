@@ -71,7 +71,7 @@ class KosFMApp:
         self._sort_reverse = False
         self._theme = self.config.get("theme", "light")
         self._show_preview = self.config.get("view", {}).get("show_preview_panel", True)
-        self._preview_height = self.config.get("panel", {}).get("preview_height", 120)
+        self._preview_height = self.config.get("panel", {}).get("preview_height")
         self._preview_sash_save_timer = None
         self._show_thumbnails = self.config.get("thumbnails", {}).get("enabled", True)
         self._sshfs_manager = SSHFSManager()
@@ -404,8 +404,11 @@ class KosFMApp:
         # Wire preview panel and thumbnails
         self.file_panel.bind_preview_sash_change(self._on_preview_sash_released)
         self.file_panel.show_preview(self._show_preview)
-        if self._show_preview and self._preview_height:
-            self.root.after(200, lambda: self.file_panel.set_preview_height(self._preview_height))
+        preview_height = self._preview_height
+        if preview_height is None:
+            preview_height = self.file_panel.get_default_preview_height()
+        if self._show_preview and preview_height:
+            self.root.after(200, lambda: self.file_panel.set_preview_height(preview_height))
         self.file_panel.set_thumbnails_enabled(self._show_thumbnails)
         # Global keyboard shortcuts
         # Global keyboard shortcuts
@@ -1060,8 +1063,11 @@ class KosFMApp:
         """Toggle preview panel visibility."""
         self._show_preview = self.menu_bar.get_show_preview_var().get()
         self.file_panel.show_preview(self._show_preview)
-        if self._show_preview and self._preview_height:
-            self.root.after(100, lambda: self.file_panel.set_preview_height(self._preview_height))
+        preview_height = self._preview_height
+        if preview_height is None:
+            preview_height = self.file_panel.get_default_preview_height()
+        if self._show_preview and preview_height:
+            self.root.after(100, lambda: self.file_panel.set_preview_height(preview_height))
         self.config["view"]["show_preview_panel"] = self._show_preview
         self.config_manager.save_config(self.config)
 

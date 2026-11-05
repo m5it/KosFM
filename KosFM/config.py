@@ -14,6 +14,11 @@ AUTHOR = "KosFM Team"
 WINDOW_SIZE = "1200x700"
 MIN_WINDOW_SIZE = (800, 500)
 
+# Preview panel default height as fraction of screen height
+PREVIEW_HEIGHT_RATIO = 0.30
+PREVIEW_MIN_HEIGHT = 100
+PREVIEW_MAX_HEIGHT = 500
+
 # UI Settings
 TREE_WIDTH = 300
 PANEL_PADDING = 5

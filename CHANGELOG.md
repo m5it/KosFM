@@ -212,6 +212,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Persist Last Directory**
   - Save last opened directory in config.json under `last_path`
   - Restore it on startup instead of always starting at program path
+- **About Dialog Fix**
+  - Replace native messagebox with dedicated Toplevel window
+- **Preview Height Defaults**
+  - Default preview height is now 30% of screen height (with min/max bounds)
+  - Ctrl+MouseWheel zooms preview pane in/out
 
 ### Planned Features
 - File preview panel for images and text

@@ -5,7 +5,9 @@ Creates File, Edit, View, and Help menus.
 """
 
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
+
+from ..config import APP_NAME, APP_VERSION
 
 
 class MenuBar:
@@ -233,31 +235,48 @@ Right-click selection -> Create Archive...   Create .zip/.tar archive
         messagebox.showinfo("Keyboard Shortcuts", shortcuts)
         
     def _show_about(self):
-        """Show About dialog."""
-        about_text = f"""{APP_NAME}
+        """Show About dialog in a dedicated Toplevel window."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"About {APP_NAME}")
+        dialog.transient(self.root)
+        dialog.resizable(False, False)
+        dialog.grab_set()
 
-Version: {APP_VERSION}
-A simple, cross-platform file manager built with Python and tkinter.
+        # Center on screen
+        dialog.update_idletasks()
+        w, h = 420, 420
+        sw, sh = dialog.winfo_screenwidth(), dialog.winfo_screenheight()
+        x = max(0, (sw - w) // 2)
+        y = max(0, (sh - h) // 2)
+        dialog.geometry(f"{w}x{h}+{x}+{y}")
 
-Features:
-- Dual-pane interface with resizable panels
-- File operations (Copy, Paste, Rename, Remove, New File/Folder)
-- Linux xdg-mime integration for file associations
-- "Open With" dialog with application selection
-- Search / filter in current folder or recursively
-- Bookmarks / favorites sidebar
-- Context menu with file operations
-- Lazy loading directory tree
-- File details (size, date, type)
-- Keyboard navigation and multi-select
-- Clickable column sorting
-- Light / dark theme toggle
-- Panel width persistence
-- Cross-platform support (Linux, Windows, macOS)
+        frame = ttk.Frame(dialog, padding="20")
+        frame.pack(fill="both", expand=True)
 
-For more information, see README.md
-"""
-        messagebox.showinfo(f"About {APP_NAME}", about_text)
+        ttk.Label(frame, text=APP_NAME, font=("TkDefaultFont", 16, "bold")).pack(pady=(0, 4))
+        ttk.Label(frame, text=f"Version {APP_VERSION}").pack(pady=(0, 12))
+
+        features = [
+            "Dual-pane interface with resizable panels",
+            "File operations (Copy, Paste, Rename, Remove, New File/Folder)",
+            "Linux xdg-mime integration and Open With dialog",
+            "Search / filter current or recursive",
+            "Bookmarks / favorites sidebar",
+            "Lazy loading directory tree",
+            "Keyboard navigation and multi-select",
+            "Clickable column sorting",
+            "Light / dark theme toggle",
+            "Image thumbnails and preview",
+            "Archive extract / create",
+            "SSHFS remote mounts",
+            "Cross-platform support (Linux, Windows, macOS)",
+        ]
+        text = tk.Text(frame, wrap="word", height=14, width=50, relief="flat")
+        text.pack(fill="both", expand=True)
+        text.insert("1.0", "\n".join(f"• {f}" for f in features) + "\n\nFor more information, see README.md")
+        text.configure(state="disabled")
+
+        ttk.Button(frame, text="Close", command=dialog.destroy).pack(pady=(12, 0))
         
     def get_show_hidden_var(self):
         """Get Show Hidden Files variable."""

@@ -61,6 +61,11 @@ class PreviewPanel:
         self.image_label.grid(row=2, column=0, sticky="nsew", pady=(0, 4))
         self.image_label.grid_remove()
 
+        # Make image area resizable with mouse wheel when focused
+        self.frame.bind("<Control-MouseWheel>", self._on_wheel_zoom)
+        self.frame.bind("<Control-Button-4>", self._on_wheel_zoom)
+        self.frame.bind("<Control-Button-5>", self._on_wheel_zoom)
+
         self.content_text = tk.Text(self.frame, wrap="word", state="disabled",
                                     height=6, padx=4, pady=4)
         self.content_text.grid(row=3, column=0, sticky="nsew")
@@ -252,6 +257,32 @@ class PreviewPanel:
         self.content_text.delete("1.0", "end")
         self.content_text.insert("1.0", text)
         self.content_text.configure(state="disabled")
+
+    def _on_wheel_zoom(self, event=None):
+        """Zoom image preview with Ctrl+mouse wheel (Linux wheel events)."""
+        if not self._last_image_path or not self._fit_mode:
+            return
+        delta = 0
+        if event is None:
+            return
+        if hasattr(event, 'delta'):
+            delta = event.delta
+        elif event.num == 4:
+            delta = 120
+        elif event.num == 5:
+            delta = -120
+        if delta == 0:
+            return
+        # Resize preview pane: positive = bigger preview, negative = smaller
+        parent = self.parent
+        try:
+            total = parent.winfo_height()
+            current = total - parent.sashpos(0)
+            step = int(total * 0.05)
+            new_preview = max(80, min(total - 100, current + (step if delta > 0 else -step)))
+            parent.sashpos(0, total - new_preview)
+        except Exception:
+            pass
 
     def set_theme_colors(self, bg, fg):
         """Apply theme colors to the text widget."""

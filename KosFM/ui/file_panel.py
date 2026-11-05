@@ -8,7 +8,7 @@ import os
 import tkinter as tk
 from tkinter import ttk
 
-from ..config import FILE_COLUMNS, PANEL_PADDING
+from ..config import FILE_COLUMNS, PANEL_PADDING, PREVIEW_HEIGHT_RATIO, PREVIEW_MIN_HEIGHT, PREVIEW_MAX_HEIGHT
 from ..utils.thumbnail_cache import ThumbnailCache
 from .preview_panel import PreviewPanel
 
@@ -384,7 +384,8 @@ class FilePanel:
             if self.h_paned.winfo_exists():
                 total = self.h_paned.winfo_height()
                 if total > 50:
-                    # sashpos is position of file list bottom
+                    # Clamp to sensible bounds
+                    preview_height = max(PREVIEW_MIN_HEIGHT, min(PREVIEW_MAX_HEIGHT, preview_height))
                     self.h_paned.sashpos(0, total - preview_height)
                 else:
                     # fallback: schedule retry
@@ -402,6 +403,15 @@ class FilePanel:
         except Exception:
             pass
         return None
+
+    def get_default_preview_height(self):
+        """Return a default preview height based on screen size."""
+        try:
+            screen_h = self.frame.winfo_screenheight()
+            height = int(screen_h * PREVIEW_HEIGHT_RATIO)
+            return max(PREVIEW_MIN_HEIGHT, min(PREVIEW_MAX_HEIGHT, height))
+        except Exception:
+            return 200
 
     def focus_search(self):
         self.search_entry.focus_set()

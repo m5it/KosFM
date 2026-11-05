@@ -94,8 +94,11 @@ class TreePanel:
         # Bind events
         self.tree.bind("<<TreeviewOpen>>", self._on_expand)
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
+        # Fallback for environments where <<TreeviewSelect>> doesn't fire reliably
+        self.tree.bind("<ButtonRelease-1>", self._on_tree_click)
         self.tree.bind("<Button-3>", self._on_tree_right_click)
         self.tree.bind("<Delete>", self._on_bookmark_delete)
+        self._last_handled_iid = None
 
     def set_select_callback(self, callback):
         """Set callback for directory selection."""
@@ -139,6 +142,24 @@ class TreePanel:
             
     def _on_select(self, event):
         """Handle tree selection."""
+        sel = self.tree.selection()
+        if sel:
+            self._last_handled_iid = sel[0]
+        self.on_select(event)
+
+    def _on_tree_click(self, event):
+        """Handle mouse click on a tree row as a fallback navigation trigger."""
+        item = self.tree.identify_row(event.y)
+        if not item:
+            return
+        # If TreeviewSelect already handled this row, skip to avoid double navigation
+        if item == self._last_handled_iid:
+            self._last_handled_iid = None
+            return
+        # Update selection to the clicked row and notify app
+        self.tree.selection_set(item)
+        self.tree.focus(item)
+        self._last_handled_iid = item
         self.on_select(event)
         
     def insert_node(self, parent, path, text, has_children=False):

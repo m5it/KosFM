@@ -235,6 +235,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+### v1.16.5 (2026-11-05)
+- 🐛 **Fixed tree selection not navigating**: Added a `<ButtonRelease-1>` fallback on the left directory tree so clicking a folder always navigates to it, even when `<<TreeviewSelect>>` doesn't fire
+- 🐛 **Avoid double navigation**: Mouse clicks handled by `<<TreeviewSelect>>` are not re-triggered by the fallback handler
+
 ### v1.16.4 (2026-11-05)
 - 🐛 **Fixed tree selection regression**: Clicking a folder in the left directory tree now keeps the folder highlighted and reliably shows its contents on the right
 - 🐛 **Preserve left-tree highlight**: Navigating to a non-bookmarked directory no longer clears the selected tree item; bookmarked paths still highlight their bookmark entry

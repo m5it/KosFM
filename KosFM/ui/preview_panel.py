@@ -57,9 +57,11 @@ class PreviewPanel:
         )
         self.fit_preview_check.grid(row=0, column=1, sticky="ne", padx=(6, 0))
 
-        self.image_label = ttk.Label(self.frame)
-        self.image_label.grid(row=2, column=0, sticky="nsew", pady=(0, 4))
-        self.image_label.grid_remove()
+        # Canvas for image preview so it can fill and re-center dynamically
+        self.image_canvas = tk.Canvas(self.frame, highlightthickness=0)
+        self.image_canvas.grid(row=2, column=0, sticky="nsew", pady=(0, 4))
+        self.image_canvas.grid_remove()
+        self.frame.rowconfigure(2, minsize=120, weight=1)
 
         # Make image area resizable with mouse wheel when focused
         self.frame.bind("<Control-MouseWheel>", self._on_wheel_zoom)
@@ -76,10 +78,11 @@ class PreviewPanel:
         self.v_scrollbar.grid(row=3, column=1, sticky="ns")
         self.content_text.configure(yscrollcommand=self.v_scrollbar.set)
 
-        # Track parent size to recalculate fit
+        # Track parent and frame size to recalculate fit
         self._last_image_path = None
         self._fit_mode = True
         self.parent.bind("<Configure>", self._on_parent_configure)
+        self.frame.bind("<Configure>", self._on_parent_configure)
 
     def clear(self):
         """Clear the preview panel."""
@@ -139,8 +142,8 @@ class PreviewPanel:
             cached = self._thumbnail_cache.get_thumbnail(path)
             if cached:
                 self._current_image = cached
-                self.image_label.configure(image=cached)
-                self.image_label.grid()
+                self._place_image(cached)
+                self.image_canvas.grid()
                 self.content_text.grid_remove()
                 self.v_scrollbar.grid_remove()
                 return
@@ -168,18 +171,31 @@ class PreviewPanel:
         if self._thumbnail_cache is None:
             from ..utils.thumbnail_cache import ThumbnailCache
             self._thumbnail_cache = ThumbnailCache(size=(200, 200))
-        # Prefer original resolution scaled to preview frame
+        # Ensure canvas is visible before measuring
+        self.image_canvas.grid()
+        self.content_text.grid_remove()
+        self.v_scrollbar.grid_remove()
+        self.frame.update_idletasks()
+        # Load scaled image directly
         photo = self._load_scaled_image(path)
         if photo is None:
             photo = self._thumbnail_cache.get_thumbnail(path)
         if photo is None:
             return False
         self._current_image = photo
-        self.image_label.configure(image=photo)
-        self.image_label.grid()
-        self.content_text.grid_remove()
-        self.v_scrollbar.grid_remove()
+        self._place_image(photo)
         return True
+
+    def _place_image(self, photo):
+        """Center image on canvas and keep a reference."""
+        self.image_canvas.delete("all")
+        self.image_canvas.image = photo  # keep reference
+        w, h = photo.width(), photo.height()
+        cw = max(w, self.image_canvas.winfo_width())
+        ch = max(h, self.image_canvas.winfo_height())
+        x = (cw - w) // 2
+        y = (ch - h) // 2
+        self.image_canvas.create_image(x, y, anchor="nw", image=photo)
 
     def _load_scaled_image(self, path):
         """Load image scaled to fit within current preview frame (Pillow only)."""
@@ -195,8 +211,15 @@ class PreviewPanel:
                 except Exception:
                     img = img.convert("RGB")
             if self._fit_mode:
-                max_w = max(64, self.frame.winfo_width() - 10)
-                max_h = max(64, self.frame.winfo_height() - 80)
+                # Use canvas's allocated size when mapped
+                cw = self.image_canvas.winfo_width()
+                ch = self.image_canvas.winfo_height()
+                # If not mapped yet, fall back to frame size
+                if cw < 10 or ch < 10:
+                    cw = self.frame.winfo_width() - 10
+                    ch = self.frame.winfo_height() - 80
+                max_w = max(64, cw - 4)
+                max_h = max(64, ch - 4)
             else:
                 # "Actual size" mode but still capped to avoid huge preview
                 max_w = max(64, min(800, img.width))
@@ -213,7 +236,7 @@ class PreviewPanel:
             self.show_path(self._last_image_path)
 
     def _on_parent_configure(self, event=None):
-        """Re-scale current image when preview panel is resized."""
+        """Re-scale current image when preview panel or top-level window is resized."""
         if not self._last_image_path or not self._current_image:
             return
         if not self._fit_mode:
@@ -224,13 +247,42 @@ class PreviewPanel:
                 self.frame.after_cancel(self._resize_after_id)
             except Exception:
                 pass
-        self._resize_after_id = self.frame.after(150, lambda: self.show_path(self._last_image_path))
+
+        def _do_resize():
+            try:
+                self.frame.update_idletasks()
+                self.parent.update_idletasks()
+                new_w = max(64, self.image_canvas.winfo_width() - 4)
+                new_h = max(64, self.image_canvas.winfo_height() - 4)
+                old_w = self._current_image.width()
+                old_h = self._current_image.height()
+                # If canvas has room to grow or shrink significantly, reload
+                if new_w > old_w or new_h > old_h or new_w < old_w * 0.8 or new_h < old_h * 0.8:
+                    self._show_image(self._last_image_path)
+            except Exception:
+                pass
+
+        # Wait for PanedWindow to finish geometry propagation
+        self._resize_after_id = self.frame.after(700, _do_resize)
+
+    def _force_preview_resize(self):
+        """Immediately update the image to fill the available preview space."""
+        if not self._last_image_path or not self._current_image:
+            return
+        if not self._fit_mode:
+            return
+        try:
+            self.frame.update_idletasks()
+            self.parent.update_idletasks()
+            self._show_image(self._last_image_path)
+        except Exception:
+            pass
 
     def _hide_image(self):
         """Hide image preview and restore text widget."""
         self._current_image = None
-        self.image_label.configure(image="")
-        self.image_label.grid_remove()
+        self.image_canvas.delete("all")
+        self.image_canvas.grid_remove()
         self.content_text.grid()
         self.v_scrollbar.grid()
 
@@ -301,8 +353,8 @@ class PreviewPanel:
                 return False
             photo = tk.PhotoImage(file=path)
             self._current_image = photo
-            self.image_label.configure(image=photo)
-            self.image_label.grid()
+            self.image_canvas.grid()
+            self._place_image(photo)
             self.content_text.grid_remove()
             self.v_scrollbar.grid_remove()
             return True

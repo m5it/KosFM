@@ -327,6 +327,8 @@ class FilePanel:
     def bind_preview_sash_change(self, callback):
         """Bind a callback called when the preview horizontal sash is released."""
         self.h_paned.bind("<ButtonRelease-1>", lambda e: callback())
+        # Also notify the preview panel so it can resize the image immediately
+        self.h_paned.bind("<B1-Motion>", lambda e: self.preview_panel._force_preview_resize(), add="+")
 
     def _on_header_click(self, column):
         """Handle click on a column header to sort."""

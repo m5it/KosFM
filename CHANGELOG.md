@@ -217,6 +217,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Preview Height Defaults**
   - Default preview height is now 30% of screen height (with min/max bounds)
   - Ctrl+MouseWheel zooms preview pane in/out
+- **Image Preview Resize Improvements**
+  - Use Canvas for image preview with centered placement
+  - Preview image now resizes when dragging the preview sash or resizing the window
+  - More aggressive reload thresholds so the photo always fills the available space
 
 ### Planned Features
 - File preview panel for images and text

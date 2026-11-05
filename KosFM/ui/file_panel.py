@@ -100,6 +100,9 @@ class FilePanel:
         """Create the file listing tree inside a vertical paned window."""
         self.h_paned = ttk.PanedWindow(self.tree_frame_container, orient="vertical")
         self.h_paned.pack(fill="both", expand=True)
+        self._preview_ratio = 0.45  # keep preview at ~45% of h_paned height
+        self._last_h_paned_height = 0
+        self.h_paned.bind("<Configure>", self._on_h_paned_configure)
 
         # Make sash grabbable (wider handle)
         try:
@@ -192,7 +195,7 @@ class FilePanel:
     def _create_preview_panel(self):
         """Create the preview panel below the file tree."""
         self.preview_panel = PreviewPanel(self.h_paned)
-        self.h_paned.add(self.preview_panel.frame, weight=1)
+        self.h_paned.add(self.preview_panel.frame, weight=0)
 
     def _create_search_bar(self):
         """Create the search/filter bar."""
@@ -327,8 +330,6 @@ class FilePanel:
     def bind_preview_sash_change(self, callback):
         """Bind a callback called when the preview horizontal sash is released."""
         self.h_paned.bind("<ButtonRelease-1>", lambda e: callback())
-        # Also notify the preview panel so it can resize the image immediately
-        self.h_paned.bind("<B1-Motion>", lambda e: self.preview_panel._force_preview_resize(), add="+")
 
     def _on_header_click(self, column):
         """Handle click on a column header to sort."""
@@ -379,6 +380,8 @@ class FilePanel:
                 self.h_paned.remove(self.preview_panel.frame)
         except Exception:
             pass
+        # keep file list dominant; preview takes default height only when shown
+        pass
 
     def set_preview_height(self, preview_height):
         """Set preview pane to desired height (file list = total - preview)."""
@@ -388,6 +391,14 @@ class FilePanel:
                 if total > 50:
                     # Clamp to sensible bounds
                     preview_height = max(PREVIEW_MIN_HEIGHT, min(PREVIEW_MAX_HEIGHT, preview_height))
+                    # Ensure file list keeps a minimum height; otherwise retry later
+                    # when the container has been fully laid out (total grows from
+                    # ~200 during startup to ~500+ once mapped).
+                    if total - preview_height < 120:
+                        if total < 400:
+                            self.h_paned.after(100, lambda: self.set_preview_height(preview_height))
+                            return
+                        preview_height = total - 120
                     self.h_paned.sashpos(0, total - preview_height)
                 else:
                     # fallback: schedule retry
@@ -405,6 +416,28 @@ class FilePanel:
         except Exception:
             pass
         return None
+
+    def _on_h_paned_configure(self, event=None):
+        """Keep preview at a stable percentage when the whole window resizes."""
+        try:
+            total = self.h_paned.winfo_height()
+            if total < 80:
+                return
+            # Detect true window resize vs sash drag: total changed
+            if abs(total - self._last_h_paned_height) < 5:
+                return
+            self._last_h_paned_height = total
+            # If user just dragged sash, update ratio; otherwise keep ratio
+            cur_preview = self.get_preview_height()
+            if cur_preview is not None and total > 0:
+                # If preview is visible, preserve its current ratio
+                ratio = cur_preview / total if total else self._preview_ratio
+                # Clamp ratio to avoid extremes (15%..60%)
+                ratio = max(0.15, min(0.60, ratio))
+                self._preview_ratio = ratio
+                self.h_paned.sashpos(0, int(total * (1 - ratio)))
+        except Exception:
+            pass
 
     def get_default_preview_height(self):
         """Return a default preview height based on screen size."""

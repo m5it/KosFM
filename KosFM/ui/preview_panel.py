@@ -61,7 +61,7 @@ class PreviewPanel:
         self.image_canvas = tk.Canvas(self.frame, highlightthickness=0)
         self.image_canvas.grid(row=2, column=0, sticky="nsew", pady=(0, 4))
         self.image_canvas.grid_remove()
-        self.frame.rowconfigure(2, minsize=120, weight=1)
+        self.frame.rowconfigure(2, minsize=140, weight=1)
 
         # Make image area resizable with mouse wheel when focused
         self.frame.bind("<Control-MouseWheel>", self._on_wheel_zoom)

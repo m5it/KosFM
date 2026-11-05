@@ -100,7 +100,7 @@ class FilePanel:
         """Create the file listing tree inside a vertical paned window."""
         self.h_paned = ttk.PanedWindow(self.tree_frame_container, orient="vertical")
         self.h_paned.pack(fill="both", expand=True)
-        self._preview_ratio = 0.45  # keep preview at ~45% of h_paned height
+        self._preview_ratio = 0.50  # keep preview at ~50% of h_paned height
         self._last_h_paned_height = 0
         self.h_paned.bind("<Configure>", self._on_h_paned_configure)
 
@@ -460,6 +460,15 @@ class FilePanel:
             self._thumbnail_cache = ThumbnailCache()
         if not self._thumbnails_enabled:
             self._thumbnail_cache = None
+        # Show/hide the #0 image column; otherwise thumbnails are inserted
+        # but never visible (width 0) so checking the box appears to do nothing.
+        try:
+            if self._thumbnails_enabled:
+                self.tree.column("#0", width=36, minwidth=32, stretch=False)
+            else:
+                self.tree.column("#0", width=0, minwidth=0, stretch=False)
+        except Exception:
+            pass
 
     def get_thumbnail(self, path):
         """Return a cached thumbnail PhotoImage or None."""

@@ -26,6 +26,21 @@ class SSHFSManager:
         """Return True if sshfs is installed on the system."""
         return shutil.which("sshfs") is not None
 
+    def _try_unmount_path(self, mountpoint):
+        """Best-effort unmount a path directly (no alias)."""
+        bin_path = self._unmount_bin()
+        for cmd in ([bin_path, "-u", mountpoint] if bin_path else None,
+                    [bin_path, "-u", "-z", mountpoint] if bin_path else None,
+                    ["fusermount", "-u", mountpoint],
+                    ["fusermount3", "-u", mountpoint],
+                    ["umount", mountpoint]):
+            if not cmd or not cmd[0]:
+                continue
+            try:
+                subprocess.run(cmd, capture_output=True, timeout=5)
+            except Exception:
+                pass
+
     def _unmount_bin(self):
         """Return fusermount3/fusermount binary or None."""
         for name in ("fusermount3", "fusermount"):
@@ -54,9 +69,26 @@ class SSHFSManager:
             raise RuntimeError("sshfs is not installed on this system")
 
         alias = alias or user_host_path
-        # Sanitize alias for filesystem path
-        safe_alias = "".join(c if c.isalnum() or c in "-_@:." else "_" for c in alias)
+        # Sanitize alias for filesystem path - keep it simple (no @:.)
+        safe_alias = "".join(c if c.isalnum() or c in "-_" else "_" for c in alias)
+        if not safe_alias:
+            safe_alias = "mount"
         mountpoint = os.path.join(self.base_mount_dir, safe_alias)
+        # Clean stale failed mount (I/O error) if present
+        if os.path.exists(mountpoint):
+            try:
+                os.listdir(mountpoint)
+            except OSError:
+                # stale mount - try to unmount
+                self._try_unmount_path(mountpoint)
+                try:
+                    os.rmdir(mountpoint)
+                except Exception:
+                    import shutil as _sh
+                    try:
+                        _sh.rmtree(mountpoint, ignore_errors=True)
+                    except Exception:
+                        pass
         os.makedirs(mountpoint, exist_ok=True)
 
         with self._lock:
@@ -84,6 +116,8 @@ class SSHFSManager:
             ssh_opts.append(f"Port={port}")
         if identity_file:
             ssh_opts.append(f"IdentityFile={identity_file}")
+        # Don't block on unknown host key after a fresh install
+        ssh_opts.append("StrictHostKeyChecking=accept-new")
         if ssh_opts:
             opts.append("ssh_command=ssh " + " ".join(f"-o {o}" for o in ssh_opts))
 
@@ -104,13 +138,16 @@ class SSHFSManager:
             raise RuntimeError(f"sshfs mount failed: {e.stderr or e.stdout or 'unknown error'}")
 
         # Verify mount by listing
-        time.sleep(0.2)
+        time.sleep(0.5)
         try:
             os.listdir(mountpoint)
         except OSError as e:
             # mount probably failed
-            self.unmount(alias, force=True)
-            raise RuntimeError(f"Mount did not become readable: {e}")
+            try:
+                self.unmount(alias, force=True)
+            except Exception:
+                self._try_unmount_path(mountpoint)
+            raise RuntimeError(f"Mount did not become readable: {e}\nCheck remote path and that you are in 'fuse' group (groups | grep fuse). Try: fusermount -u {mountpoint}")
 
         with self._lock:
             self._mounts[alias] = mountpoint

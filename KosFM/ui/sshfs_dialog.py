@@ -10,23 +10,24 @@ from tkinter import ttk, messagebox, simpledialog
 class SSHFSConnectDialog(simpledialog.Dialog):
     """Dialog to enter SSHFS connection details."""
 
-    def __init__(self, parent, title="Connect to SSHFS"):
+    def __init__(self, parent, title="Connect to SSHFS", initial=None):
         self.result_data = None
+        self.initial = initial or {}
         super().__init__(parent, title=title)
 
     def body(self, master):
         """Create dialog body."""
         ttk.Label(master, text="User@Host:/path").grid(row=0, column=0, sticky="w", pady=2)
-        self.host_var = tk.StringVar(value="user@example.com:/home/user")
+        self.host_var = tk.StringVar(value=self.initial.get("host", "user@example.com:/home/user"))
         self.host_entry = ttk.Entry(master, textvariable=self.host_var, width=40)
         self.host_entry.grid(row=0, column=1, sticky="ew", pady=2)
 
         ttk.Label(master, text="Alias (optional)").grid(row=1, column=0, sticky="w", pady=2)
-        self.alias_var = tk.StringVar()
+        self.alias_var = tk.StringVar(value=self.initial.get("alias", ""))
         ttk.Entry(master, textvariable=self.alias_var, width=40).grid(row=1, column=1, sticky="ew", pady=2)
 
         ttk.Label(master, text="Port").grid(row=2, column=0, sticky="w", pady=2)
-        self.port_var = tk.StringVar(value="22")
+        self.port_var = tk.StringVar(value=self.initial.get("port", "22"))
         ttk.Entry(master, textvariable=self.port_var, width=10).grid(row=2, column=1, sticky="w", pady=2)
 
         self.use_key_var = tk.BooleanVar(value=False)
@@ -34,7 +35,7 @@ class SSHFSConnectDialog(simpledialog.Dialog):
                         command=self._toggle_key).grid(row=3, column=0, columnspan=2, sticky="w", pady=2)
 
         ttk.Label(master, text="Identity file").grid(row=4, column=0, sticky="w", pady=2)
-        self.key_var = tk.StringVar(value=os.path.expanduser("~/.ssh/id_rsa"))
+        self.key_var = tk.StringVar(value=self.initial.get("identity_file", os.path.expanduser("~/.ssh/id_rsa")))
         self.key_entry = ttk.Entry(master, textvariable=self.key_var, width=40, state="disabled")
         self.key_entry.grid(row=4, column=1, sticky="ew", pady=2)
 
@@ -83,8 +84,7 @@ class SSHFSConnectDialog(simpledialog.Dialog):
         }
 
     def show(self):
-        """Show dialog and return result data."""
-        self.wait_window()
+        """Return result data (Dialog.__init__ already blocks)."""
         return self.result_data
 
 
@@ -112,5 +112,4 @@ class SSHFSDisconnectDialog(simpledialog.Dialog):
             self.selected = self.aliases[sel[0]]
 
     def show(self):
-        self.wait_window()
         return self.selected

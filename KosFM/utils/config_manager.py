@@ -44,6 +44,12 @@ class ConfigManager:
                 "enabled": True
             },
             "sshfs_mounts": {},
+            "sshfs_last": {
+                "host": "user@example.com:/home/user",
+                "alias": "",
+                "port": "22",
+                "identity_file": "~/.ssh/id_rsa"
+            },
             "last_path": "~"
         }
         

@@ -186,53 +186,79 @@ class MenuBar:
         )
         
     def _show_shortcuts(self):
-        """Show keyboard shortcuts dialog."""
-        shortcuts = """Keyboard Shortcuts:
+        """Show keyboard shortcuts dialog in a Toplevel like About."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Keyboard Shortcuts")
+        dialog.transient(self.root)
+        dialog.resizable(False, False)
+        dialog.grab_set()
 
-Ctrl+R / F5      Refresh current directory
-Ctrl+Q      Exit application
-Ctrl+N      New file
-Ctrl+Shift+N  New folder
-Ctrl+F      Focus search box
-Ctrl+D      Add current directory to bookmarks
-Esc         Clear search
+        dialog.update_idletasks()
+        w, h = 560, 520
+        sw, sh = dialog.winfo_screenwidth(), dialog.winfo_screenheight()
+        x = max(0, (sw - w) // 2)
+        y = max(0, (sh - h) // 2)
+        dialog.geometry(f"{w}x{h}+{x}+{y}")
+
+        frame = ttk.Frame(dialog, padding="20")
+        frame.pack(fill="both", expand=True)
+
+        ttk.Label(frame, text="Keyboard Shortcuts", font=("TkDefaultFont", 14, "bold")).pack(pady=(0, 12))
+
+        text = tk.Text(frame, wrap="word", height=24, width=66, relief="flat", padx=6, pady=6)
+        text.pack(fill="both", expand=True)
+
+        # Use scrollbar if content overflows
+        sb = ttk.Scrollbar(frame, orient="vertical", command=text.yview)
+        text.configure(yscrollcommand=sb.set)
+
+        shortcuts = """\
+General:
+  Ctrl+R / F5        Refresh current directory
+  Ctrl+Q             Exit application
+  Ctrl+N             New file
+  Ctrl+Shift+N       New folder
+  Ctrl+F             Focus search box
+  Ctrl+D             Add current directory to bookmarks
+  Esc                Clear search
 
 Navigation:
-Arrow Up / Down     Move selection in file list
-Shift + Arrow Up/Down   Extend selection
-Ctrl + Click        Toggle item selection
-Shift + Click       Select range
-Enter               Open selected file / folder
-Backspace           Go to parent directory
-F2                  Rename selected item
-Delete              Delete selected item(s)
-Double-click        Open folder
+  Arrow Up / Down         Move selection in file list
+  Shift + Arrow Up/Down   Extend selection
+  Ctrl + Click            Toggle item selection
+  Shift + Click           Select range
+  Enter                 Open selected file / folder
+  Backspace             Go to parent directory
+  F2                    Rename selected item
+  Delete                Delete selected item(s)
+  Double-click          Open folder
 
 Menu:
-File -> Refresh        Reload directory
-File -> New Folder     Create new folder
-File -> New File       Create new empty file
-File -> Exit           Close application
-Edit -> Search / Filter    Focus search box
-Edit -> Add Bookmark       Bookmark current directory
-View -> Show Hidden Files    Toggle hidden files
-View -> Show Status Bar      Toggle status bar
-View -> Show Preview Panel   Toggle file preview pane
-View -> Show Image Thumbnails    Show/hide image thumbnails in file list
-View -> Toggle Dark Theme    Switch between light and dark themes
+  File → Refresh              Reload directory
+  File → New Folder           Create new folder
+  File → New File             Create new empty file
+  Edit → Search / Filter        Focus search box
+  Edit → Add Bookmark           Bookmark current directory
+  View → Show Hidden Files      Toggle hidden files
+  View → Show Status Bar        Toggle status bar
+  View → Show Preview Panel     Toggle file preview pane
+  View → Show Image Thumbnails  Show/hide thumbnails in file list
+  View → Toggle Dark Theme      Switch light / dark theme
+  Remote → Connect SSHFS        Mount remote directory via sshfs
+  Remote → Disconnect SSHFS     Unmount active SSHFS mount
 
 Preview Panel:
-Fit to panel checkbox   Scale image to fit preview pane
-
-Remote:
-Remote -> Connect SSHFS     Mount remote directory via sshfs
-Remote -> Disconnect SSHFS  Unmount active SSHFS mount
+  Fit to panel checkbox   Scale image to fit preview pane
+  Ctrl + Mouse Wheel      Resize preview pane
 
 Archives:
-Right-click archive -> Extract Archive   Extract to current directory
-Right-click selection -> Create Archive...   Create .zip/.tar archive
+  Right-click archive → Extract Archive
+  Right-click selection → Create Archive…
 """
-        messagebox.showinfo("Keyboard Shortcuts", shortcuts)
+        text.insert("1.0", shortcuts)
+        text.configure(state="disabled")
+
+        ttk.Button(frame, text="Close", command=dialog.destroy).pack(pady=(12, 0))
         
     def _show_about(self):
         """Show About dialog in a dedicated Toplevel window."""

@@ -67,6 +67,9 @@ class KosFMApp:
         self.current_path = None
         self._sash_save_timer = None
         self._right_sash_save_timer = None
+        self._tabs = {}  # alias -> path (for tab bar)
+        self._tab_buttons = {}
+        self._active_tab = None
         self._sort_column = "name"
         self._sort_reverse = False
         self._theme = self.config.get("theme", "light")
@@ -98,6 +101,8 @@ class KosFMApp:
         # Set initial directory from saved last_path if valid, otherwise default
         initial_path = self._last_path if os.path.isdir(self._last_path) else os.path.expanduser(DEFAULT_PATH)
         self.nav.navigate_to(initial_path)
+        # Create initial Home tab so tab bar is visible
+        self._add_tab("Home", initial_path)
         
         # Bind window close event
         self.root.protocol("WM_DELETE_WINDOW", self._on_window_close)
@@ -288,10 +293,14 @@ class KosFMApp:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
 
+        # Tab bar for local + SSHFS locations (row 0), paned view in row 1
+        self._create_tab_bar()
+
         self.paned_window = ttk.PanedWindow(self.main_frame, orient="horizontal")
-        self.paned_window.grid(row=0, column=0, sticky="nsew")
+        self.paned_window.grid(row=1, column=0, sticky="nsew")
         self.main_frame.columnconfigure(0, weight=1)
-        self.main_frame.rowconfigure(0, weight=1)
+        self.main_frame.rowconfigure(1, weight=1)
+        self.main_frame.rowconfigure(0, weight=0)
 
         self._create_tree_panel()
         self._create_file_panel()
@@ -336,6 +345,67 @@ class KosFMApp:
         except Exception as e:
             logger.debug("Could not restore right sash position: %s", e)
         
+    def _create_tab_bar(self):
+        """Create notebook-style tab bar for open locations."""
+        self.tab_bar_frame = ttk.Frame(self.main_frame)
+        self.tab_bar_frame.grid(row=0, column=0, sticky="ew", pady=(0, 2))
+        self.tab_bar = ttk.Frame(self.tab_bar_frame)
+        self.tab_bar.pack(side="left")
+
+    def _add_tab(self, alias, path):
+        """Add a tab for the given alias/path; switch to it."""
+        if alias in self._tabs:
+            self._switch_tab(alias)
+            return
+        self._tabs[alias] = path
+        frm = ttk.Frame(self.tab_bar, borderwidth=1, relief="raised")
+        frm.pack(side="left", padx=1)
+        btn = ttk.Button(frm, text=alias, width=14,
+                         command=lambda a=alias: self._switch_tab(a))
+        btn.pack(side="left")
+        close = ttk.Button(frm, text="×", width=2,
+                           command=lambda a=alias: self._close_tab(a))
+        close.pack(side="left")
+        self._tab_buttons[alias] = frm
+        self._switch_tab(alias)
+
+    def _switch_tab(self, alias):
+        """Activate tab and navigate to its path."""
+        if alias not in self._tabs:
+            return
+        self._active_tab = alias
+        # Visual highlight: sunken for active, raised for others
+        for a, frm in self._tab_buttons.items():
+            try:
+                frm.configure(relief="sunken" if a == alias else "raised")
+            except Exception:
+                pass
+        path = self._tabs[alias]
+        if os.path.isdir(path):
+            self.nav.navigate_to(path)
+
+    def _close_tab(self, alias):
+        """Close tab; unmount SSHFS if it was a remote."""
+        path = self._tabs.pop(alias, None)
+        frm = self._tab_buttons.pop(alias, None)
+        if frm:
+            try:
+                frm.destroy()
+            except Exception:
+                pass
+        # If remote mount, offer to unmount
+        if path and path.startswith(self._sshfs_manager.base_mount_dir):
+            try:
+                self._sshfs_manager.unmount(alias)
+                self.status_bar.update(f"Closed tab and unmounted: {alias}")
+            except Exception:
+                pass
+        if self._tabs:
+            # Switch to last remaining tab
+            self._switch_tab(list(self._tabs.keys())[-1])
+        else:
+            self._active_tab = None
+
     def _create_menu_bar(self):
         """Create menu bar with handlers."""
         handlers = {
@@ -694,11 +764,32 @@ class KosFMApp:
                 self._cancel_search()
 
             entries = []
-            with os.scandir(self.current_path) as it:
-                for entry in it:
-                    if not self.menu_bar.get_show_hidden_var().get() and entry.name.startswith('.'):
-                        continue
-                    entries.append(entry)
+            # Run scandir in a thread with timeout - any hanging mount (SSHFS or otherwise) will not freeze UI
+            # Capture Tk vars on main thread before spawning (Tk is not thread-safe)
+            try:
+                show_hidden = self.menu_bar.get_show_hidden_var().get()
+            except Exception:
+                show_hidden = False
+            cur_path = self.current_path
+            probe_err = []
+            probe_entries = []
+            def _do_scan():
+                try:
+                    with os.scandir(cur_path) as it:
+                        for entry in it:
+                            if not show_hidden and entry.name.startswith('.'):
+                                continue
+                            probe_entries.append(entry)
+                except Exception as e:
+                    probe_err.append(e)
+            t = threading.Thread(target=_do_scan, daemon=True)
+            t.start()
+            t.join(timeout=2.0)
+            if t.is_alive():
+                raise OSError(f"Directory not responding (stale mount?) – {cur_path}. Try: fusermount -u -z {cur_path}")
+            if probe_err:
+                raise probe_err[0]
+            entries = probe_entries
 
             self._cached_entries = entries
             self._render_entries(entries, self._filter_query)
@@ -711,7 +802,10 @@ class KosFMApp:
         except OSError as e:
             self._cached_entries = []
             self.file_panel.clear()
-            self.file_panel.insert_item("", f"Error: {e}", "", "", "")
+            msg = str(e)
+            # Keep it short for the tree row; full text in status bar
+            short = msg if len(msg) < 60 else msg[:57] + "..."
+            self.file_panel.insert_item("", f"Error: {short}", "", "", "")
             self.status_bar.update(f"Error: {e}")
                 
     def _open_file(self, path):
@@ -1088,11 +1182,19 @@ class KosFMApp:
         if not self._sshfs_manager.sshfs_available():
             self._show_error("sshfs is not installed on this system.\nInstall sshfs to use this feature.")
             return
-
-        dialog = SSHFSConnectDialog(self.root)
+        last = self.config.get("sshfs_last", {})
+        dialog = SSHFSConnectDialog(self.root, initial=last)
         data = dialog.show()
         if not data:
             return
+        # Remember for next time (don't persist password)
+        self.config.setdefault("sshfs_last", {}).update({
+            "host": data.get("host", ""),
+            "alias": data.get("alias", "") or "",
+            "port": str(data.get("port") or "22"),
+            "identity_file": data.get("identity_file") or "",
+        })
+        self.config_manager.save_config(self.config)
 
         alias = data.get("alias") or data["host"]
         try:
@@ -1103,12 +1205,9 @@ class KosFMApp:
                 identity_file=data.get("identity_file"),
                 password=data.get("password")
             )
-            # Add to tree panel as remote node if it has an API
-            if hasattr(self.tree_panel, 'add_remote_node'):
-                self.tree_panel.add_remote_node(alias, mountpoint)
-            else:
-                # Fall back: add as bookmark
-                self._add_bookmark(mountpoint)
+            # Show as tab + bookmark for quick access
+            self._add_tab(alias, mountpoint)
+            self._add_bookmark(mountpoint)
             self.status_bar.update(f"SSHFS mounted: {alias} at {mountpoint}")
         except Exception as e:
             self._show_error(f"Could not mount SSHFS: {e}")

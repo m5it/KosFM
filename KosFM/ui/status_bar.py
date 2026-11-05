@@ -55,7 +55,7 @@ class StatusBar:
         
     def show(self):
         """Show the status bar."""
-        self.frame.grid()
+        self.frame.grid(row=1, column=0, sticky="ew", padx=PANEL_PADDING, pady=(0, PANEL_PADDING))
         
     def hide(self):
         """Hide the status bar."""

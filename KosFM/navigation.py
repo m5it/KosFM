@@ -27,6 +27,14 @@ class NavigationManager:
         if not os.path.isdir(path):
             self.app.status_bar.update(f"Invalid directory: {path}")
             return
+        # Avoid navigation loop when bookmark and tree node share same path
+        try:
+            if self.app.current_path and os.path.normpath(self.app.current_path) == os.path.normpath(path):
+                # Already there – just ensure file view is fresh without re-triggering selection events
+                # Don't re-highlight bookmark to avoid selection loop
+                return
+        except Exception:
+            pass
 
         # Reset search/filter when changing directory
         self.app._cancel_search()

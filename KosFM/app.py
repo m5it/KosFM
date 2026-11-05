@@ -76,6 +76,7 @@ class KosFMApp:
         self._show_thumbnails = self.config.get("thumbnails", {}).get("enabled", True)
         self._sshfs_manager = SSHFSManager()
         self._sshfs_mounts = self.config.get("sshfs_mounts", {})
+        self._last_path = os.path.expanduser(self.config.get("last_path", "~"))
 
         # Search state
         self._cached_entries = []  # last scandir entries for filtering
@@ -94,8 +95,9 @@ class KosFMApp:
         # Populate tree roots
         self.nav.populate_tree_roots()
         
-        # Set initial directory
-        self.nav.navigate_to(os.path.expanduser(DEFAULT_PATH))
+        # Set initial directory from saved last_path if valid, otherwise default
+        initial_path = self._last_path if os.path.isdir(self._last_path) else os.path.expanduser(DEFAULT_PATH)
+        self.nav.navigate_to(initial_path)
         
         # Bind window close event
         self.root.protocol("WM_DELETE_WINDOW", self._on_window_close)
@@ -146,7 +148,11 @@ class KosFMApp:
             self.config["window"]["y"] = int(y)
         except ValueError:
             pass
-            
+
+        # Save last directory
+        if self.current_path and os.path.isdir(self.current_path):
+            self.config["last_path"] = self.current_path
+
         # Also save sash positions as backup
         if hasattr(self, 'paned_window'):
             try:

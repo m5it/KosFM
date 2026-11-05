@@ -29,6 +29,7 @@ A simple, cross-platform file manager built with Python and tkinter. Features a 
 - **Archive Handling**: Extract / create ZIP and TAR archives
 - **Image Thumbnails**: Optional Pillow-based thumbnails in the file list
 - **SSHFS Remote Mounts**: Mount remote directories via system `sshfs`
+- **Persist Last Directory**: Reopen the last folder on startup
 - **Navigation**:
   - Click directories in tree to view contents
   - Double-click folders to navigate into them

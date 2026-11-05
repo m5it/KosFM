@@ -43,7 +43,8 @@ class ConfigManager:
             "thumbnails": {
                 "enabled": True
             },
-            "sshfs_mounts": {}
+            "sshfs_mounts": {},
+            "last_path": "~"
         }
         
     def ensure_config_dir(self):

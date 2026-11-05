@@ -209,6 +209,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Disconnect active mounts from Remote menu
   - Supports key-based and password-based (via sshpass) authentication
   - Active mounts are saved in config and unmounted on exit
+- **Persist Last Directory**
+  - Save last opened directory in config.json under `last_path`
+  - Restore it on startup instead of always starting at program path
 
 ### Planned Features
 - File preview panel for images and text
